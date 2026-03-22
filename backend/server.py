@@ -475,6 +475,84 @@ async def buy_from_marketplace(request: BuyCardRequest, current_user: dict = Dep
     
     return {"success": True, "transaction_id": transaction_id, "message": f"Successfully purchased {request.quantity} card(s)"}
 
+# ============ MARKET VALUATION ============
+
+def calculate_market_value(card: dict) -> dict:
+    """Calculate AI market value based on card attributes - simulates real market analysis"""
+    base = card["current_price"]
+    # Factor in rarity multiplier
+    rarity_mult = {"Legendary": 1.12, "Ultra Rare": 1.08, "Rare": 1.05, "Common": 1.02}
+    mult = rarity_mult.get(card["rarity"], 1.0)
+    
+    # Factor in grade premium
+    grade_mult = 1.0
+    if "PSA 10" in card["grade"]:
+        grade_mult = 1.10
+    elif "PSA 9" in card["grade"] or "BGS 9.5" in card["grade"]:
+        grade_mult = 1.06
+    
+    # Factor in player status (HOF, active rising star, etc.)
+    status_mult = 1.0
+    if card.get("hall_of_fame"):
+        status_mult = 1.08
+    elif card.get("player_status") == "active" and card["price_change_pct"] > 10:
+        status_mult = 1.12  # Rising star premium
+    
+    # Factor in momentum (volume + price trend)
+    momentum = 1.0 + (card["price_change_pct"] / 200)  # Slight adjust for momentum
+    
+    fair_market_value = base * mult * grade_mult * status_mult * momentum
+    
+    # Confidence based on volume
+    confidence = min(0.95, 0.60 + (card["volume_24h"] / 500))
+    
+    # Suggested buy range: 80-90% of FMV
+    buy_low = round(fair_market_value * 0.80, 2)
+    buy_high = round(fair_market_value * 0.90, 2)
+    
+    # Suggested sell range: 95-105% of FMV
+    sell_low = round(fair_market_value * 0.95, 2)
+    sell_high = round(fair_market_value * 1.05, 2)
+    
+    return {
+        "card_id": card["id"],
+        "card_name": card["name"],
+        "current_price": card["current_price"],
+        "fair_market_value": round(fair_market_value, 2),
+        "value_vs_price_pct": round(((fair_market_value - base) / base) * 100, 2),
+        "confidence": round(confidence, 2),
+        "buy_range": {"low": buy_low, "high": buy_high},
+        "sell_range": {"low": sell_low, "high": sell_high},
+        "potential_profit_at_buy_low": round(fair_market_value - buy_low, 2),
+        "potential_profit_pct_at_buy_low": round(((fair_market_value - buy_low) / buy_low) * 100, 2),
+        "potential_profit_at_buy_high": round(fair_market_value - buy_high, 2),
+        "potential_profit_pct_at_buy_high": round(((fair_market_value - buy_high) / buy_high) * 100, 2),
+        "grade_premium": card["grade"],
+        "rarity": card["rarity"],
+        "volume_24h": card["volume_24h"],
+        "momentum": "Bullish" if card["price_change_pct"] > 3 else ("Bearish" if card["price_change_pct"] < -3 else "Neutral"),
+    }
+
+@api_router.get("/marketplace/valuations")
+async def get_market_valuations(category: Optional[str] = None):
+    """Get AI market valuations for all cards with buy/sell ranges"""
+    cards = MOCK_CARDS.copy()
+    if category and category != "all":
+        cards = [c for c in cards if c["category"].lower() == category.lower()]
+    
+    valuations = [calculate_market_value(c) for c in cards]
+    # Sort by potential profit percentage descending
+    valuations.sort(key=lambda x: x["potential_profit_pct_at_buy_low"], reverse=True)
+    return valuations
+
+@api_router.get("/marketplace/valuation/{card_id}")
+async def get_card_valuation(card_id: str):
+    """Get AI market valuation for a specific card"""
+    card = next((c for c in MOCK_CARDS if c["id"] == card_id), None)
+    if not card:
+        raise HTTPException(status_code=404, detail="Card not found")
+    return calculate_market_value(card)
+
 # ============ PORTFOLIO ROUTES ============
 
 @api_router.get("/portfolio", response_model=List[dict])

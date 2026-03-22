@@ -24,6 +24,8 @@ export const getCardPriceHistory = (cardId) => api.get(`/cards/${cardId}/price-h
 export const getMarketplaceListings = (params) => api.get('/marketplace/listings', { params });
 export const createListing = (data) => api.post('/marketplace/list', data);
 export const buyFromMarketplace = (data) => api.post('/marketplace/buy', data);
+export const getMarketValuations = (params) => api.get('/marketplace/valuations', { params });
+export const getCardValuation = (cardId) => api.get(`/marketplace/valuation/${cardId}`);
 
 // Portfolio
 export const getPortfolio = () => api.get('/portfolio');
@@ -71,10 +73,5 @@ export const addToWatchlist = (data) => api.post('/watchlist', data);
 export const updateWatchlistItem = (itemId, data) => api.put(`/watchlist/${itemId}`, data);
 export const removeFromWatchlist = (itemId) => api.delete(`/watchlist/${itemId}`);
 export const getWatchlistAlerts = () => api.get('/watchlist/alerts');
-
-// ============ EARNINGS / PLAYER PERFORMANCE ============
-export const getPlayerEarnings = (cardId) => api.get(`/earnings/${cardId}`);
-export const getEarningsCalendar = () => api.get('/earnings/calendar');
-export const getPerformanceLeaderboard = () => api.get('/earnings/leaderboard');
 
 export default api;
