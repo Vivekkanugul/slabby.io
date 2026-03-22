@@ -1,6 +1,6 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-import { LayoutDashboard, Store, Briefcase, Brain, User, LogOut, Menu, X, BarChart3, Eye } from 'lucide-react';
+import { Store, Briefcase, Brain, User, LogOut, Menu, X, BarChart3 } from 'lucide-react';
 import { useState } from 'react';
 import { Button } from '../ui/button';
 import {
@@ -20,9 +20,8 @@ export const Navbar = () => {
   const navLinks = [
     { to: '/marketplace', label: 'Marketplace', icon: Store },
     { to: '/portfolio', label: 'Portfolio', icon: Briefcase },
-    { to: '/watchlist', label: 'Watchlist', icon: Eye },
     { to: '/analytics', label: 'Analytics', icon: BarChart3 },
-    { to: '/ai-insights', label: 'Research', icon: Brain },
+    { to: '/ai-insights', label: 'AI Research', icon: Brain },
   ];
 
   const handleLogout = () => {

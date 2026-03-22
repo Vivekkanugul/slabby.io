@@ -18,7 +18,6 @@ import Analytics from "./pages/Analytics";
 import WhatIfSimulator from "./pages/WhatIfSimulator";
 import GradeCalculator from "./pages/GradeCalculator";
 import CardScreener from "./pages/CardScreener";
-import Watchlist from "./pages/Watchlist";
 
 // Protected Route wrapper
 const ProtectedRoute = () => {
@@ -96,7 +95,6 @@ function AppRoutes() {
         <Route path="/analytics/simulator" element={<WhatIfSimulator />} />
         <Route path="/analytics/grading" element={<GradeCalculator />} />
         <Route path="/analytics/screener" element={<CardScreener />} />
-        <Route path="/watchlist" element={<Watchlist />} />
         <Route path="/profile" element={<Profile />} />
       </Route>
 
