@@ -243,11 +243,11 @@ export default function Analytics() {
                 <p className="text-sm text-zinc-400">Predict grade probabilities & ROI</p>
               </div>
             </Link>
-            <Link to="/analytics/stress-test" className="block">
-              <div className="bg-gradient-to-br from-amber-500/20 to-transparent border border-amber-500/30 rounded-xl p-6 hover:border-amber-500/50 transition-colors">
-                <Shield className="w-8 h-8 text-amber-400 mb-3" />
-                <h3 className="font-medium text-white mb-1">Stress Test</h3>
-                <p className="text-sm text-zinc-400">Simulate market crash scenarios</p>
+            <Link to="/analytics/screener" className="block">
+              <div className="bg-gradient-to-br from-purple-500/20 to-transparent border border-purple-500/30 rounded-xl p-6 hover:border-purple-500/50 transition-colors">
+                <BarChart3 className="w-8 h-8 text-purple-400 mb-3" />
+                <h3 className="font-medium text-white mb-1">Card Screener</h3>
+                <p className="text-sm text-zinc-400">Filter cards like a trading terminal</p>
               </div>
             </Link>
           </div>
@@ -405,16 +405,41 @@ export default function Analytics() {
 
         {/* Risk Tab */}
         <TabsContent value="risk" className="space-y-6">
-          <div className="text-center py-12">
-            <Shield className="w-12 h-12 text-zinc-600 mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-white mb-2">Portfolio Stress Testing</h3>
-            <p className="text-zinc-400 mb-6">Simulate how your portfolio performs under different market conditions</p>
-            <Link to="/analytics/stress-test">
-              <Button className="bg-[#007AFF] hover:bg-[#005bb5]">
-                Run Stress Test
-                <ArrowRight className="w-4 h-4 ml-2" />
-              </Button>
-            </Link>
+          <div className="bg-[#0A0A0C] border border-white/10 rounded-xl p-6">
+            <h3 className="font-medium text-lg text-white mb-6 flex items-center gap-2">
+              <Shield className="w-5 h-5 text-amber-400" />
+              Portfolio Risk Metrics
+            </h3>
+            {portfolioMetrics?.risk_metrics ? (
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div className="p-4 bg-white/5 rounded-lg">
+                  <span className="text-xs text-zinc-500 block mb-2">Value at Risk (95%)</span>
+                  <span className="font-mono text-lg text-red-400">
+                    {formatCurrency(portfolioMetrics.risk_metrics.var_95)}
+                  </span>
+                </div>
+                <div className="p-4 bg-white/5 rounded-lg">
+                  <span className="text-xs text-zinc-500 block mb-2">Max Drawdown</span>
+                  <span className="font-mono text-lg text-amber-400">
+                    {portfolioMetrics.risk_metrics.max_drawdown_potential}%
+                  </span>
+                </div>
+                <div className="p-4 bg-white/5 rounded-lg">
+                  <span className="text-xs text-zinc-500 block mb-2">Portfolio Beta</span>
+                  <span className="font-mono text-lg text-white">
+                    {portfolioMetrics.risk_metrics.portfolio_beta}
+                  </span>
+                </div>
+                <div className="p-4 bg-white/5 rounded-lg">
+                  <span className="text-xs text-zinc-500 block mb-2">Sharpe Ratio</span>
+                  <span className={`font-mono text-lg ${portfolioMetrics.risk_metrics.portfolio_sharpe > 1 ? 'text-emerald-400' : 'text-zinc-400'}`}>
+                    {portfolioMetrics.risk_metrics.portfolio_sharpe}
+                  </span>
+                </div>
+              </div>
+            ) : (
+              <p className="text-zinc-500 text-center py-8">Add cards to your portfolio to see risk metrics</p>
+            )}
           </div>
         </TabsContent>
       </Tabs>
