@@ -198,6 +198,44 @@ class SmartAlert(BaseModel):
     timestamp: str
     is_read: bool = False
 
+# Watchlist Models
+class WatchlistItem(BaseModel):
+    id: str
+    user_id: str
+    card_id: str
+    added_at: str
+    price_at_add: float
+    target_price_high: Optional[float] = None
+    target_price_low: Optional[float] = None
+    alert_enabled: bool = True
+    notes: Optional[str] = None
+
+class AddToWatchlistRequest(BaseModel):
+    card_id: str
+    target_price_high: Optional[float] = None
+    target_price_low: Optional[float] = None
+    notes: Optional[str] = None
+
+class UpdateWatchlistAlertRequest(BaseModel):
+    target_price_high: Optional[float] = None
+    target_price_low: Optional[float] = None
+    alert_enabled: Optional[bool] = None
+    notes: Optional[str] = None
+
+# Player Performance / Earnings Models
+class GamePerformance(BaseModel):
+    date: str
+    opponent: str
+    points: Optional[int] = None
+    rebounds: Optional[int] = None
+    assists: Optional[int] = None
+    home_runs: Optional[int] = None
+    hits: Optional[int] = None
+    touchdowns: Optional[int] = None
+    passing_yards: Optional[int] = None
+    result: str  # W/L
+    impact_score: float  # -100 to 100
+
 # ============ AUTH HELPERS ============
 
 def hash_password(password: str) -> str:
@@ -1193,6 +1231,456 @@ async def get_market_overview():
         "fear_greed_index": random.randint(25, 80),
         "market_trend": "bullish" if gainers > losers else "bearish"
     }
+
+# ============ WATCHLIST ROUTES ============
+
+@api_router.get("/watchlist")
+async def get_watchlist(current_user: dict = Depends(get_current_user)):
+    """Get user's watchlist with current prices and alert status"""
+    watchlist = await db.watchlist.find({"user_id": current_user["id"]}, {"_id": 0}).to_list(100)
+    
+    result = []
+    for item in watchlist:
+        card = next((c for c in MOCK_CARDS if c["id"] == item["card_id"]), None)
+        if card:
+            price_change_since_add = ((card["current_price"] - item["price_at_add"]) / item["price_at_add"]) * 100
+            
+            # Check if alerts triggered
+            alert_triggered = None
+            if item.get("alert_enabled"):
+                if item.get("target_price_high") and card["current_price"] >= item["target_price_high"]:
+                    alert_triggered = "high"
+                elif item.get("target_price_low") and card["current_price"] <= item["target_price_low"]:
+                    alert_triggered = "low"
+            
+            result.append({
+                **item,
+                "card": card,
+                "current_price": card["current_price"],
+                "price_change_since_add": round(price_change_since_add, 2),
+                "alert_triggered": alert_triggered
+            })
+    
+    return result
+
+@api_router.post("/watchlist")
+async def add_to_watchlist(request: AddToWatchlistRequest, current_user: dict = Depends(get_current_user)):
+    """Add a card to watchlist"""
+    card = next((c for c in MOCK_CARDS if c["id"] == request.card_id), None)
+    if not card:
+        raise HTTPException(status_code=404, detail="Card not found")
+    
+    # Check if already in watchlist
+    existing = await db.watchlist.find_one({"user_id": current_user["id"], "card_id": request.card_id})
+    if existing:
+        raise HTTPException(status_code=400, detail="Card already in watchlist")
+    
+    watchlist_item = {
+        "id": str(uuid.uuid4()),
+        "user_id": current_user["id"],
+        "card_id": request.card_id,
+        "added_at": datetime.now(timezone.utc).isoformat(),
+        "price_at_add": card["current_price"],
+        "target_price_high": request.target_price_high,
+        "target_price_low": request.target_price_low,
+        "alert_enabled": True,
+        "notes": request.notes
+    }
+    await db.watchlist.insert_one(watchlist_item)
+    
+    return {"success": True, "message": f"Added {card['name']} to watchlist", "item": watchlist_item}
+
+@api_router.put("/watchlist/{item_id}")
+async def update_watchlist_item(item_id: str, request: UpdateWatchlistAlertRequest, current_user: dict = Depends(get_current_user)):
+    """Update watchlist item alerts"""
+    item = await db.watchlist.find_one({"id": item_id, "user_id": current_user["id"]})
+    if not item:
+        raise HTTPException(status_code=404, detail="Watchlist item not found")
+    
+    update_data = {}
+    if request.target_price_high is not None:
+        update_data["target_price_high"] = request.target_price_high
+    if request.target_price_low is not None:
+        update_data["target_price_low"] = request.target_price_low
+    if request.alert_enabled is not None:
+        update_data["alert_enabled"] = request.alert_enabled
+    if request.notes is not None:
+        update_data["notes"] = request.notes
+    
+    if update_data:
+        await db.watchlist.update_one({"id": item_id}, {"$set": update_data})
+    
+    return {"success": True, "message": "Watchlist item updated"}
+
+@api_router.delete("/watchlist/{item_id}")
+async def remove_from_watchlist(item_id: str, current_user: dict = Depends(get_current_user)):
+    """Remove card from watchlist"""
+    result = await db.watchlist.delete_one({"id": item_id, "user_id": current_user["id"]})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Watchlist item not found")
+    return {"success": True, "message": "Removed from watchlist"}
+
+@api_router.get("/watchlist/alerts")
+async def get_watchlist_alerts(current_user: dict = Depends(get_current_user)):
+    """Get all triggered alerts from watchlist"""
+    watchlist = await db.watchlist.find({"user_id": current_user["id"], "alert_enabled": True}, {"_id": 0}).to_list(100)
+    
+    triggered_alerts = []
+    for item in watchlist:
+        card = next((c for c in MOCK_CARDS if c["id"] == item["card_id"]), None)
+        if not card:
+            continue
+        
+        if item.get("target_price_high") and card["current_price"] >= item["target_price_high"]:
+            triggered_alerts.append({
+                "id": str(uuid.uuid4()),
+                "watchlist_id": item["id"],
+                "card_id": card["id"],
+                "card_name": card["name"],
+                "alert_type": "price_above_target",
+                "message": f"{card['player_name']} hit your target price of {item['target_price_high']:,.0f}",
+                "current_price": card["current_price"],
+                "target_price": item["target_price_high"],
+                "timestamp": datetime.now(timezone.utc).isoformat()
+            })
+        
+        if item.get("target_price_low") and card["current_price"] <= item["target_price_low"]:
+            triggered_alerts.append({
+                "id": str(uuid.uuid4()),
+                "watchlist_id": item["id"],
+                "card_id": card["id"],
+                "card_name": card["name"],
+                "alert_type": "price_below_target",
+                "message": f"{card['player_name']} dropped to your buy target of {item['target_price_low']:,.0f}",
+                "current_price": card["current_price"],
+                "target_price": item["target_price_low"],
+                "timestamp": datetime.now(timezone.utc).isoformat()
+            })
+    
+    return {"alerts": triggered_alerts, "count": len(triggered_alerts)}
+
+# ============ EARNINGS / PLAYER PERFORMANCE ROUTES ============
+
+# Mock player stats data
+PLAYER_STATS = {
+    "Michael Jordan": {
+        "sport": "Basketball",
+        "position": "SG",
+        "status": "Retired",
+        "career_highlights": ["6x NBA Champion", "5x MVP", "14x All-Star", "10x Scoring Champion"],
+        "season_stats": None,
+        "recent_games": [],
+        "legacy_score": 100,
+        "card_value_correlation": 0.95
+    },
+    "LeBron James": {
+        "sport": "Basketball",
+        "position": "SF",
+        "status": "Active",
+        "team": "Los Angeles Lakers",
+        "career_highlights": ["4x NBA Champion", "4x MVP", "20x All-Star"],
+        "season_stats": {"ppg": 25.7, "rpg": 7.3, "apg": 8.3, "games": 55},
+        "recent_games": [
+            {"date": "2024-01-20", "opponent": "GSW", "points": 30, "rebounds": 8, "assists": 12, "result": "W", "impact_score": 85},
+            {"date": "2024-01-18", "opponent": "BOS", "points": 27, "rebounds": 6, "assists": 9, "result": "L", "impact_score": 45},
+            {"date": "2024-01-16", "opponent": "MIA", "points": 35, "rebounds": 10, "assists": 7, "result": "W", "impact_score": 90},
+            {"date": "2024-01-14", "opponent": "PHX", "points": 22, "rebounds": 5, "assists": 11, "result": "W", "impact_score": 60},
+            {"date": "2024-01-12", "opponent": "DEN", "points": 28, "rebounds": 9, "assists": 8, "result": "L", "impact_score": 50},
+        ],
+        "legacy_score": 95,
+        "card_value_correlation": 0.78
+    },
+    "Luka Doncic": {
+        "sport": "Basketball",
+        "position": "PG",
+        "status": "Active",
+        "team": "Dallas Mavericks",
+        "career_highlights": ["5x All-Star", "All-NBA First Team"],
+        "season_stats": {"ppg": 33.9, "rpg": 9.2, "apg": 9.8, "games": 45},
+        "recent_games": [
+            {"date": "2024-01-20", "opponent": "LAL", "points": 42, "rebounds": 11, "assists": 14, "result": "W", "impact_score": 95},
+            {"date": "2024-01-18", "opponent": "MEM", "points": 38, "rebounds": 8, "assists": 10, "result": "W", "impact_score": 88},
+            {"date": "2024-01-16", "opponent": "SAS", "points": 35, "rebounds": 12, "assists": 8, "result": "W", "impact_score": 82},
+            {"date": "2024-01-14", "opponent": "HOU", "points": 29, "rebounds": 7, "assists": 11, "result": "L", "impact_score": 55},
+            {"date": "2024-01-12", "opponent": "OKC", "points": 44, "rebounds": 10, "assists": 9, "result": "W", "impact_score": 92},
+        ],
+        "legacy_score": 75,
+        "card_value_correlation": 0.88
+    },
+    "Victor Wembanyama": {
+        "sport": "Basketball",
+        "position": "C",
+        "status": "Active",
+        "team": "San Antonio Spurs",
+        "career_highlights": ["Rookie of the Year Favorite", "#1 Overall Pick"],
+        "season_stats": {"ppg": 21.4, "rpg": 10.6, "apg": 3.7, "bpg": 3.6, "games": 50},
+        "recent_games": [
+            {"date": "2024-01-20", "opponent": "DAL", "points": 28, "rebounds": 14, "assists": 5, "result": "L", "impact_score": 70},
+            {"date": "2024-01-18", "opponent": "POR", "points": 32, "rebounds": 12, "assists": 4, "result": "W", "impact_score": 85},
+            {"date": "2024-01-16", "opponent": "UTA", "points": 25, "rebounds": 11, "assists": 6, "result": "W", "impact_score": 78},
+            {"date": "2024-01-14", "opponent": "SAC", "points": 19, "rebounds": 8, "assists": 3, "result": "L", "impact_score": 40},
+            {"date": "2024-01-12", "opponent": "LAC", "points": 24, "rebounds": 13, "assists": 4, "result": "W", "impact_score": 72},
+        ],
+        "legacy_score": 50,
+        "card_value_correlation": 0.92
+    },
+    "Mickey Mantle": {
+        "sport": "Baseball",
+        "position": "CF",
+        "status": "Deceased",
+        "career_highlights": ["3x MVP", "7x World Series Champion", "Triple Crown Winner", "Hall of Fame"],
+        "season_stats": None,
+        "recent_games": [],
+        "legacy_score": 98,
+        "card_value_correlation": 0.85
+    },
+    "Julio Rodriguez": {
+        "sport": "Baseball",
+        "position": "CF",
+        "status": "Active",
+        "team": "Seattle Mariners",
+        "career_highlights": ["AL Rookie of the Year", "All-Star"],
+        "season_stats": {"avg": ".275", "hr": 32, "rbi": 95, "sb": 37, "games": 155},
+        "recent_games": [
+            {"date": "2024-01-20", "opponent": "NYY", "hits": 2, "home_runs": 1, "rbi": 3, "result": "W", "impact_score": 80},
+            {"date": "2024-01-19", "opponent": "NYY", "hits": 1, "home_runs": 0, "rbi": 0, "result": "L", "impact_score": 25},
+            {"date": "2024-01-18", "opponent": "BOS", "hits": 3, "home_runs": 1, "rbi": 2, "result": "W", "impact_score": 85},
+        ],
+        "legacy_score": 45,
+        "card_value_correlation": 0.82
+    },
+    "Justin Herbert": {
+        "sport": "Football",
+        "position": "QB",
+        "status": "Active",
+        "team": "Los Angeles Chargers",
+        "career_highlights": ["Offensive Rookie of the Year", "Pro Bowl"],
+        "season_stats": {"passing_yards": 4200, "touchdowns": 28, "interceptions": 12, "passer_rating": 98.5, "games": 16},
+        "recent_games": [
+            {"date": "2024-01-21", "opponent": "KC", "passing_yards": 320, "touchdowns": 3, "result": "L", "impact_score": 65},
+            {"date": "2024-01-14", "opponent": "LV", "passing_yards": 285, "touchdowns": 2, "result": "W", "impact_score": 72},
+            {"date": "2024-01-07", "opponent": "DEN", "passing_yards": 350, "touchdowns": 4, "result": "W", "impact_score": 90},
+        ],
+        "legacy_score": 55,
+        "card_value_correlation": 0.75
+    },
+    "Joe Burrow": {
+        "sport": "Football",
+        "position": "QB",
+        "status": "Active",
+        "team": "Cincinnati Bengals",
+        "career_highlights": ["Super Bowl Appearance", "Comeback Player of the Year"],
+        "season_stats": {"passing_yards": 4475, "touchdowns": 34, "interceptions": 9, "passer_rating": 101.8, "games": 17},
+        "recent_games": [
+            {"date": "2024-01-21", "opponent": "BUF", "passing_yards": 375, "touchdowns": 3, "result": "W", "impact_score": 88},
+            {"date": "2024-01-14", "opponent": "BAL", "passing_yards": 290, "touchdowns": 2, "result": "L", "impact_score": 55},
+            {"date": "2024-01-07", "opponent": "CLE", "passing_yards": 340, "touchdowns": 4, "result": "W", "impact_score": 85},
+        ],
+        "legacy_score": 60,
+        "card_value_correlation": 0.80
+    },
+    "Zion Williamson": {
+        "sport": "Basketball",
+        "position": "PF",
+        "status": "Active",
+        "team": "New Orleans Pelicans",
+        "career_highlights": ["All-Star", "#1 Overall Pick"],
+        "season_stats": {"ppg": 22.9, "rpg": 5.8, "apg": 5.0, "games": 35},
+        "recent_games": [
+            {"date": "2024-01-20", "opponent": "ATL", "points": 28, "rebounds": 7, "assists": 6, "result": "W", "impact_score": 75},
+            {"date": "2024-01-16", "opponent": "CHI", "points": 18, "rebounds": 4, "assists": 3, "result": "L", "impact_score": 35},
+        ],
+        "legacy_score": 40,
+        "card_value_correlation": 0.65
+    },
+    "Trae Young": {
+        "sport": "Basketball",
+        "position": "PG",
+        "status": "Active",
+        "team": "Atlanta Hawks",
+        "career_highlights": ["3x All-Star"],
+        "season_stats": {"ppg": 26.2, "rpg": 3.1, "apg": 10.8, "games": 50},
+        "recent_games": [
+            {"date": "2024-01-20", "opponent": "NOP", "points": 35, "rebounds": 4, "assists": 12, "result": "L", "impact_score": 68},
+            {"date": "2024-01-18", "opponent": "MIL", "points": 41, "rebounds": 3, "assists": 14, "result": "W", "impact_score": 92},
+        ],
+        "legacy_score": 50,
+        "card_value_correlation": 0.70
+    }
+}
+
+@api_router.get("/earnings/{card_id}")
+async def get_player_earnings(card_id: str):
+    """Get player performance/earnings data for a card"""
+    card = next((c for c in MOCK_CARDS if c["id"] == card_id), None)
+    if not card:
+        raise HTTPException(status_code=404, detail="Card not found")
+    
+    player_name = card["player_name"]
+    player_data = PLAYER_STATS.get(player_name)
+    
+    if not player_data:
+        # Generate mock data for unknown players
+        player_data = {
+            "sport": card["category"],
+            "position": "N/A",
+            "status": "Active",
+            "career_highlights": [],
+            "season_stats": None,
+            "recent_games": [],
+            "legacy_score": 50,
+            "card_value_correlation": 0.5
+        }
+    
+    # Calculate performance trend
+    recent_games = player_data.get("recent_games", [])
+    if recent_games:
+        avg_impact = sum(g["impact_score"] for g in recent_games) / len(recent_games)
+        trend = "hot" if avg_impact > 70 else "cold" if avg_impact < 50 else "stable"
+    else:
+        avg_impact = None
+        trend = "stable"
+    
+    # Generate earnings calendar (upcoming games/events)
+    upcoming_events = []
+    if player_data["status"] == "Active":
+        for i in range(5):
+            event_date = (datetime.now(timezone.utc) + timedelta(days=i*3+1)).strftime("%Y-%m-%d")
+            opponents = ["LAL", "BOS", "GSW", "MIA", "PHX", "NYK", "CHI", "DEN"]
+            upcoming_events.append({
+                "date": event_date,
+                "type": "game",
+                "opponent": random.choice(opponents),
+                "importance": random.choice(["low", "medium", "high"]),
+                "projected_impact": random.randint(-10, 25)
+            })
+    
+    return {
+        "card_id": card_id,
+        "card_name": card["name"],
+        "player_name": player_name,
+        "player_data": player_data,
+        "performance_trend": trend,
+        "avg_impact_score": round(avg_impact, 1) if avg_impact else None,
+        "upcoming_events": upcoming_events,
+        "value_correlation": player_data.get("card_value_correlation", 0.5),
+        "next_catalyst": get_next_catalyst(player_data, card)
+    }
+
+def get_next_catalyst(player_data: dict, card: dict) -> dict:
+    """Determine the next potential catalyst for card value"""
+    catalysts = []
+    
+    if player_data["status"] == "Active":
+        catalysts.append({
+            "event": "Playoff Performance",
+            "probability": 0.7,
+            "potential_impact": "+15-30%",
+            "timeframe": "2-3 months"
+        })
+        catalysts.append({
+            "event": "All-Star Selection",
+            "probability": 0.5,
+            "potential_impact": "+5-10%",
+            "timeframe": "1 month"
+        })
+        if player_data.get("legacy_score", 0) > 70:
+            catalysts.append({
+                "event": "Award/MVP Consideration",
+                "probability": 0.3,
+                "potential_impact": "+20-40%",
+                "timeframe": "3-4 months"
+            })
+    elif player_data["status"] == "Retired":
+        catalysts.append({
+            "event": "Documentary/Anniversary",
+            "probability": 0.2,
+            "potential_impact": "+5-15%",
+            "timeframe": "Unknown"
+        })
+        catalysts.append({
+            "event": "Market Appreciation",
+            "probability": 0.8,
+            "potential_impact": "+3-8% annually",
+            "timeframe": "Ongoing"
+        })
+    
+    return catalysts[0] if catalysts else None
+
+@api_router.get("/earnings/calendar")
+async def get_earnings_calendar():
+    """Get calendar of upcoming events that may impact card values"""
+    events = []
+    
+    for card in MOCK_CARDS[:6]:
+        player_name = card["player_name"]
+        player_data = PLAYER_STATS.get(player_name, {})
+        
+        if player_data.get("status") == "Active":
+            # Add game events
+            for i in range(2):
+                event_date = (datetime.now(timezone.utc) + timedelta(days=i*2+1))
+                opponents = ["LAL", "BOS", "GSW", "MIA", "PHX", "NYK"]
+                events.append({
+                    "id": str(uuid.uuid4()),
+                    "date": event_date.isoformat(),
+                    "date_display": event_date.strftime("%b %d"),
+                    "player_name": player_name,
+                    "card_id": card["id"],
+                    "event_type": "game",
+                    "description": f"vs {random.choice(opponents)}",
+                    "importance": random.choice(["medium", "high"]),
+                    "projected_impact": random.randint(-5, 20)
+                })
+    
+    # Add market-wide events
+    events.append({
+        "id": str(uuid.uuid4()),
+        "date": (datetime.now(timezone.utc) + timedelta(days=14)).isoformat(),
+        "date_display": (datetime.now(timezone.utc) + timedelta(days=14)).strftime("%b %d"),
+        "player_name": None,
+        "card_id": None,
+        "event_type": "market",
+        "description": "All-Star Weekend",
+        "importance": "high",
+        "projected_impact": 15
+    })
+    
+    # Sort by date
+    events.sort(key=lambda x: x["date"])
+    
+    return {"events": events[:10]}
+
+@api_router.get("/earnings/leaderboard")
+async def get_performance_leaderboard():
+    """Get leaderboard of players by recent performance impact"""
+    leaderboard = []
+    
+    for card in MOCK_CARDS:
+        player_name = card["player_name"]
+        player_data = PLAYER_STATS.get(player_name, {})
+        recent_games = player_data.get("recent_games", [])
+        
+        if recent_games:
+            avg_impact = sum(g["impact_score"] for g in recent_games) / len(recent_games)
+            wins = len([g for g in recent_games if g["result"] == "W"])
+            
+            leaderboard.append({
+                "card_id": card["id"],
+                "player_name": player_name,
+                "team": player_data.get("team", card["team"]),
+                "category": card["category"],
+                "avg_impact_score": round(avg_impact, 1),
+                "recent_record": f"{wins}-{len(recent_games)-wins}",
+                "trend": "hot" if avg_impact > 70 else "cold" if avg_impact < 50 else "stable",
+                "card_price_change": card["price_change_pct"],
+                "correlation": player_data.get("card_value_correlation", 0.5)
+            })
+    
+    # Sort by impact score
+    leaderboard.sort(key=lambda x: x["avg_impact_score"], reverse=True)
+    
+    return {"leaderboard": leaderboard}
 
 @api_router.get("/")
 async def root():

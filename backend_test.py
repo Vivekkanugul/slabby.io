@@ -4,7 +4,7 @@ import json
 from datetime import datetime
 
 class CardWiseAPITester:
-    def __init__(self, base_url="https://cardwise-17.preview.emergentagent.com"):
+    def __init__(self, base_url="https://ai-cards-2.preview.emergentagent.com"):
         self.base_url = base_url
         self.token = None
         self.user_id = None

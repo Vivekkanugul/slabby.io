@@ -65,4 +65,16 @@ export const getSmartAlerts = () => api.get('/analytics/smart-alerts');
 // Advanced Portfolio Metrics
 export const getAdvancedPortfolioMetrics = () => api.get('/analytics/portfolio-metrics');
 
+// ============ WATCHLIST ============
+export const getWatchlist = () => api.get('/watchlist');
+export const addToWatchlist = (data) => api.post('/watchlist', data);
+export const updateWatchlistItem = (itemId, data) => api.put(`/watchlist/${itemId}`, data);
+export const removeFromWatchlist = (itemId) => api.delete(`/watchlist/${itemId}`);
+export const getWatchlistAlerts = () => api.get('/watchlist/alerts');
+
+// ============ EARNINGS / PLAYER PERFORMANCE ============
+export const getPlayerEarnings = (cardId) => api.get(`/earnings/${cardId}`);
+export const getEarningsCalendar = () => api.get('/earnings/calendar');
+export const getPerformanceLeaderboard = () => api.get('/earnings/leaderboard');
+
 export default api;
