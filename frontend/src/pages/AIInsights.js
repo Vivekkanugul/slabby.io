@@ -9,7 +9,7 @@ import {
   Sparkles, TrendingUp, TrendingDown, Loader2, Activity,
   Target, BarChart3, LineChart, Zap, AlertTriangle, Shield,
   DollarSign, Users, FileText, Layers, Gauge, ArrowUpRight,
-  ArrowDownRight, Minus, Clock, Hash, Box, Timer
+  ArrowDownRight, Minus, Clock, Hash, Box, Timer, Search
 } from 'lucide-react';
 import { formatCurrency, formatPercent, getPriceChangeColor } from '../lib/utils';
 import {
@@ -54,7 +54,7 @@ export default function AIInsights() {
       });
       setPredictions(enriched);
       setCards(cardsRes.data);
-      if (enriched.length > 0) setSelectedCard(enriched[0]);
+      // Don't auto-select — user searches for a player
     } catch (error) {
       console.error('Error fetching predictions:', error);
     } finally {
@@ -88,43 +88,20 @@ export default function AIInsights() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
-        {/* Card Selector */}
+        {/* Card Selector — Search-driven */}
         <div className="lg:col-span-1">
-          <div className="bg-[#0A0A0C] border border-white/10 rounded-xl p-3 sticky top-20">
-            <h3 className="font-medium text-white mb-3 flex items-center gap-2 text-sm">
-              <FileText className="w-4 h-4 text-[#00E5FF]" />Coverage
-            </h3>
-            <div className="space-y-1.5">
-              {predictions.map((pred) => (
-                <button
-                  key={pred.id}
-                  onClick={() => setSelectedCard(pred)}
-                  data-testid={`research-card-${pred.card_id}`}
-                  className={`w-full p-2.5 rounded-lg text-left transition-all ${
-                    selectedCard?.id === pred.id
-                      ? 'bg-[#007AFF]/20 border border-[#007AFF]/40'
-                      : 'bg-white/[0.03] hover:bg-white/[0.06] border border-transparent'
-                  }`}
-                >
-                  <div className="flex items-center justify-between mb-0.5">
-                    <span className="text-xs text-white font-medium truncate flex-1">{pred.card?.player_name}</span>
-                    <SignalBadge signal={pred.signal} />
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-[10px] text-zinc-500">{pred.card?.category}</span>
-                    <span className={`text-[10px] font-mono ${getPriceChangeColor(pred.card?.price_change_pct)}`}>
-                      {formatPercent(pred.card?.price_change_pct)}
-                    </span>
-                  </div>
-                </button>
-              ))}
-            </div>
-          </div>
+          <PlayerSearch predictions={predictions} selectedCard={selectedCard} onSelect={setSelectedCard} />
         </div>
 
         {/* Main Panel */}
         <div className="lg:col-span-4 space-y-5">
-          {selectedCard && (
+          {!selectedCard ? (
+            <div className="bg-[#0A0A0C] border border-white/10 rounded-xl p-12 text-center">
+              <Search className="w-12 h-12 text-zinc-700 mx-auto mb-4" />
+              <h2 className="text-lg font-medium text-white mb-2">Search for a Player</h2>
+              <p className="text-zinc-500 text-sm max-w-md mx-auto">Type a player name, team, or sport in the search bar to pull up their full AI research profile — technicals, price targets, comps, risk analysis, and more.</p>
+            </div>
+          ) : (
             <>
               {/* Card Header */}
               <CardHeader card={selectedCard} valuation={valuation} />
@@ -133,7 +110,7 @@ export default function AIInsights() {
               <QuickStats card={selectedCard} valuation={valuation} />
 
               {/* Analysis Tabs */}
-              <Tabs defaultValue="technicals" className="space-y-4">
+              <Tabs defaultValue="targets" className="space-y-4">
                 <TabsList className="bg-[#0A0A0C] border border-white/10 p-1 flex-wrap h-auto gap-1">
                   <TabsTrigger value="technicals" className="data-[state=active]:bg-white/10 text-xs" data-testid="tab-technicals">
                     <LineChart className="w-3.5 h-3.5 mr-1.5" />Technical
@@ -1081,6 +1058,107 @@ function genRadarData(selectedCard) {
     { metric: 'Sharpe', card: norm(c.sharpe_ratio, 3), peer: norm(avg('sharpe'), 3) },
     { metric: 'Stability', card: norm(100 - c.volatility_30d, 100), peer: norm(100 - avg('volatility'), 100) },
   ];
+}
+
+// ===== PLAYER SEARCH SIDEBAR =====
+
+function PlayerSearch({ predictions, selectedCard, onSelect }) {
+  const [query, setQuery] = useState('');
+  const [focused, setFocused] = useState(false);
+
+  const filtered = query.trim()
+    ? predictions.filter(p => {
+        const q = query.toLowerCase();
+        return p.card?.player_name?.toLowerCase().includes(q) ||
+               p.card?.category?.toLowerCase().includes(q) ||
+               p.card?.team?.toLowerCase().includes(q);
+      })
+    : [];
+
+  const showResults = query.trim().length > 0;
+
+  return (
+    <div className="bg-[#0A0A0C] border border-white/10 rounded-xl p-3 sticky top-20">
+      <h3 className="font-medium text-white mb-3 flex items-center gap-2 text-sm">
+        <Search className="w-4 h-4 text-[#00E5FF]" />Research
+      </h3>
+      <div className="relative mb-3">
+        <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-zinc-500" />
+        <input
+          type="text"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          onFocus={() => setFocused(true)}
+          placeholder="Search player or team..."
+          className="w-full pl-8 pr-3 py-2 bg-white/5 border border-white/10 rounded-lg text-xs text-white placeholder:text-zinc-600 focus:outline-none focus:border-[#007AFF]/50"
+          data-testid="research-search-input"
+        />
+        {query && (
+          <button onClick={() => setQuery('')} className="absolute right-2 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-white text-xs">
+            &times;
+          </button>
+        )}
+      </div>
+
+      {/* Selected card always shows */}
+      {selectedCard && (
+        <div className="mb-2">
+          <span className="text-[9px] text-zinc-600 uppercase tracking-wider">Active</span>
+          <button
+            className="w-full p-2.5 rounded-lg text-left bg-[#007AFF]/20 border border-[#007AFF]/40 mt-1"
+            data-testid={`research-card-${selectedCard.card_id}`}
+          >
+            <div className="flex items-center justify-between mb-0.5">
+              <span className="text-xs text-white font-medium truncate flex-1">{selectedCard.card?.player_name}</span>
+              <SignalBadge signal={selectedCard.signal} />
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] text-zinc-500">{selectedCard.card?.category}</span>
+              <span className={`text-[10px] font-mono ${getPriceChangeColor(selectedCard.card?.price_change_pct)}`}>
+                {formatPercent(selectedCard.card?.price_change_pct)}
+              </span>
+            </div>
+          </button>
+        </div>
+      )}
+
+      {/* Search results */}
+      {showResults && (
+        <div className="space-y-1">
+          <span className="text-[9px] text-zinc-600 uppercase tracking-wider">{filtered.length} result{filtered.length !== 1 ? 's' : ''}</span>
+          {filtered.length === 0 && (
+            <p className="text-[10px] text-zinc-500 py-3 text-center">No players found</p>
+          )}
+          {filtered.map((pred) => (
+            <button
+              key={pred.id}
+              onClick={() => { onSelect(pred); setQuery(''); }}
+              data-testid={`search-result-${pred.card_id}`}
+              className={`w-full p-2.5 rounded-lg text-left transition-all ${
+                selectedCard?.id === pred.id
+                  ? 'bg-[#007AFF]/10 border border-[#007AFF]/30'
+                  : 'bg-white/[0.03] hover:bg-white/[0.06] border border-transparent'
+              }`}
+            >
+              <div className="flex items-center justify-between mb-0.5">
+                <span className="text-xs text-white font-medium truncate flex-1">{pred.card?.player_name}</span>
+                <SignalBadge signal={pred.signal} />
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] text-zinc-500">{pred.card?.category}</span>
+                <span className="text-[10px] font-mono text-zinc-400">{formatCurrency(pred.card?.current_price, true)}</span>
+              </div>
+            </button>
+          ))}
+        </div>
+      )}
+
+      {/* Empty state when no search */}
+      {!showResults && !selectedCard && (
+        <p className="text-[10px] text-zinc-500 text-center py-4">Type a player name to begin</p>
+      )}
+    </div>
+  );
 }
 
 // ===== UI COMPONENTS =====
