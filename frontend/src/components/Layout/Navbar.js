@@ -18,7 +18,6 @@ export const Navbar = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const navLinks = [
-    { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { to: '/marketplace', label: 'Marketplace', icon: Store },
     { to: '/portfolio', label: 'Portfolio', icon: Briefcase },
     { to: '/watchlist', label: 'Watchlist', icon: Eye },
