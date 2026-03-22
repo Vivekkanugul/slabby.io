@@ -112,23 +112,17 @@ export default function AIInsights() {
               {/* Analysis Tabs */}
               <Tabs defaultValue="targets" className="space-y-4">
                 <TabsList className="bg-[#0A0A0C] border border-white/10 p-1 flex-wrap h-auto gap-1">
-                  <TabsTrigger value="technicals" className="data-[state=active]:bg-white/10 text-xs" data-testid="tab-technicals">
-                    <LineChart className="w-3.5 h-3.5 mr-1.5" />Technical
-                  </TabsTrigger>
                   <TabsTrigger value="targets" className="data-[state=active]:bg-white/10 text-xs" data-testid="tab-targets">
                     <Target className="w-3.5 h-3.5 mr-1.5" />Price Targets
+                  </TabsTrigger>
+                  <TabsTrigger value="technicals" className="data-[state=active]:bg-white/10 text-xs" data-testid="tab-technicals">
+                    <LineChart className="w-3.5 h-3.5 mr-1.5" />Technical
                   </TabsTrigger>
                   <TabsTrigger value="comparables" className="data-[state=active]:bg-white/10 text-xs" data-testid="tab-comparables">
                     <Users className="w-3.5 h-3.5 mr-1.5" />Comps
                   </TabsTrigger>
                   <TabsTrigger value="fundamentals" className="data-[state=active]:bg-white/10 text-xs" data-testid="tab-fundamentals">
                     <BarChart3 className="w-3.5 h-3.5 mr-1.5" />Fundamentals
-                  </TabsTrigger>
-                  <TabsTrigger value="risk" className="data-[state=active]:bg-white/10 text-xs" data-testid="tab-risk">
-                    <Shield className="w-3.5 h-3.5 mr-1.5" />Risk
-                  </TabsTrigger>
-                  <TabsTrigger value="market" className="data-[state=active]:bg-white/10 text-xs" data-testid="tab-market">
-                    <Layers className="w-3.5 h-3.5 mr-1.5" />Market Intel
                   </TabsTrigger>
                   <TabsTrigger value="performance" className="data-[state=active]:bg-white/10 text-xs" data-testid="tab-performance">
                     <Activity className="w-3.5 h-3.5 mr-1.5" />Player Stats
@@ -206,6 +200,53 @@ export default function AIInsights() {
                         <SignalRow label="Trend Direction" value={selectedCard.technicals?.trend_direction} type={selectedCard.technicals?.trend_direction === 'Uptrend' ? 'bullish' : selectedCard.technicals?.trend_direction === 'Downtrend' ? 'bearish' : 'neutral'} />
                       </div>
                     </div>
+                  </div>
+
+                  {/* Market Intel (merged) */}
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                    <FundCard label="Market Cap" value={formatCurrency(selectedCard.card?.market_cap, true)} sub="Total market" icon={<DollarSign className="w-4 h-4 text-emerald-400" />} />
+                    <FundCard label="24h Volume" value={selectedCard.card?.volume_24h?.toString()} sub="transactions" icon={<Activity className="w-4 h-4 text-blue-400" />} />
+                    <FundCard label="Bid-Ask Spread" value={`${selectedCard.marketIntel?.bid_ask_spread}%`} sub={selectedCard.marketIntel?.bid_ask_spread < 5 ? 'Tight' : 'Wide'} icon={<Layers className="w-4 h-4 text-purple-400" />} />
+                    <FundCard label="Market Depth" value={selectedCard.marketIntel?.market_depth} sub="score" icon={<Gauge className="w-4 h-4 text-orange-400" />} />
+                  </div>
+
+                  {/* Recent Sales */}
+                  <div className="bg-[#0A0A0C] border border-white/10 rounded-xl p-5">
+                    <h3 className="font-medium text-white mb-4 text-sm">Recent Sales History</h3>
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-sm">
+                        <thead><tr className="border-b border-white/10">
+                          {['Date','Platform','Price','vs Current','Grade'].map(h=><th key={h} className="text-left text-[10px] text-zinc-500 uppercase p-2.5">{h}</th>)}
+                        </tr></thead>
+                        <tbody>
+                          {selectedCard.marketIntel?.recent_sales?.map((s, i) => {
+                            const diff = ((s.price - selectedCard.card?.current_price) / selectedCard.card?.current_price * 100);
+                            return (
+                              <tr key={i} className="border-b border-white/5">
+                                <td className="p-2.5 text-zinc-400">{s.date}</td>
+                                <td className="p-2.5 text-zinc-300">{s.platform}</td>
+                                <td className="p-2.5 font-mono text-white">{formatCurrency(s.price, true)}</td>
+                                <td className={`p-2.5 font-mono ${getPriceChangeColor(diff)}`}>{diff > 0 ? '+' : ''}{diff.toFixed(1)}%</td>
+                                <td className="p-2.5 text-zinc-400">{s.grade}</td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+
+                  {/* Volume Profile */}
+                  <div className="bg-[#0A0A0C] border border-white/10 rounded-xl p-5">
+                    <h3 className="font-medium text-white mb-4 text-sm">30-Day Volume Profile</h3>
+                    <ResponsiveContainer width="100%" height={160}>
+                      <BarChart data={volumeData}>
+                        <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{ fill: '#52525B', fontSize: 10 }} interval={4} />
+                        <YAxis axisLine={false} tickLine={false} tick={{ fill: '#52525B', fontSize: 10 }} />
+                        <Tooltip content={<VolumeTooltip />} />
+                        <Bar dataKey="volume" fill="#007AFF" radius={[2,2,0,0]} opacity={0.7} />
+                      </BarChart>
+                    </ResponsiveContainer>
                   </div>
                 </TabsContent>
 
@@ -370,10 +411,8 @@ export default function AIInsights() {
                       ))}
                     </div>
                   </div>
-                </TabsContent>
 
-                {/* RISK TAB */}
-                <TabsContent value="risk" className="space-y-4">
+                  {/* Risk Profile (merged) */}
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                     <RiskCard label="Volatility (30d)" value={`${selectedCard.riskProfile?.volatility_30d}%`} rating={selectedCard.riskProfile?.volatility_30d > 30 ? 'High' : selectedCard.riskProfile?.volatility_30d > 15 ? 'Medium' : 'Low'} />
                     <RiskCard label="Max Drawdown" value={`-${selectedCard.riskProfile?.max_drawdown}%`} rating={selectedCard.riskProfile?.max_drawdown > 25 ? 'High' : 'Medium'} />
@@ -417,55 +456,6 @@ export default function AIInsights() {
                     </div>
                     <Progress value={selectedCard.riskProfile?.overall_score} className="h-2" />
                     <div className="flex justify-between mt-1"><span className="text-[10px] text-emerald-400">Low Risk</span><span className="text-[10px] text-red-400">High Risk</span></div>
-                  </div>
-                </TabsContent>
-
-                {/* MARKET INTEL TAB */}
-                <TabsContent value="market" className="space-y-4">
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                    <FundCard label="Market Cap" value={formatCurrency(selectedCard.card?.market_cap, true)} sub="Total market" icon={<DollarSign className="w-4 h-4 text-emerald-400" />} />
-                    <FundCard label="24h Volume" value={selectedCard.card?.volume_24h?.toString()} sub="transactions" icon={<Activity className="w-4 h-4 text-blue-400" />} />
-                    <FundCard label="Bid-Ask Spread" value={`${selectedCard.marketIntel?.bid_ask_spread}%`} sub={selectedCard.marketIntel?.bid_ask_spread < 5 ? 'Tight' : 'Wide'} icon={<Layers className="w-4 h-4 text-purple-400" />} />
-                    <FundCard label="Market Depth" value={selectedCard.marketIntel?.market_depth} sub="score" icon={<Gauge className="w-4 h-4 text-orange-400" />} />
-                  </div>
-
-                  {/* Recent Sales */}
-                  <div className="bg-[#0A0A0C] border border-white/10 rounded-xl p-5">
-                    <h3 className="font-medium text-white mb-4 text-sm">Recent Sales History</h3>
-                    <div className="overflow-x-auto">
-                      <table className="w-full text-sm">
-                        <thead><tr className="border-b border-white/10">
-                          {['Date','Platform','Price','vs Current','Grade'].map(h=><th key={h} className="text-left text-[10px] text-zinc-500 uppercase p-2.5">{h}</th>)}
-                        </tr></thead>
-                        <tbody>
-                          {selectedCard.marketIntel?.recent_sales?.map((s, i) => {
-                            const diff = ((s.price - selectedCard.card?.current_price) / selectedCard.card?.current_price * 100);
-                            return (
-                              <tr key={i} className="border-b border-white/5">
-                                <td className="p-2.5 text-zinc-400">{s.date}</td>
-                                <td className="p-2.5 text-zinc-300">{s.platform}</td>
-                                <td className="p-2.5 font-mono text-white">{formatCurrency(s.price, true)}</td>
-                                <td className={`p-2.5 font-mono ${getPriceChangeColor(diff)}`}>{diff > 0 ? '+' : ''}{diff.toFixed(1)}%</td>
-                                <td className="p-2.5 text-zinc-400">{s.grade}</td>
-                              </tr>
-                            );
-                          })}
-                        </tbody>
-                      </table>
-                    </div>
-                  </div>
-
-                  {/* Volume Profile */}
-                  <div className="bg-[#0A0A0C] border border-white/10 rounded-xl p-5">
-                    <h3 className="font-medium text-white mb-4 text-sm">30-Day Volume Profile</h3>
-                    <ResponsiveContainer width="100%" height={160}>
-                      <BarChart data={volumeData}>
-                        <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{ fill: '#52525B', fontSize: 10 }} interval={4} />
-                        <YAxis axisLine={false} tickLine={false} tick={{ fill: '#52525B', fontSize: 10 }} />
-                        <Tooltip content={<VolumeTooltip />} />
-                        <Bar dataKey="volume" fill="#007AFF" radius={[2,2,0,0]} opacity={0.7} />
-                      </BarChart>
-                    </ResponsiveContainer>
                   </div>
                 </TabsContent>
 
