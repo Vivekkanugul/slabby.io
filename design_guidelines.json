@@ -1,0 +1,159 @@
+{
+  "theme": "dark",
+  "theme_and_atmosphere": {
+    "name": "The Performance Pro meets Jewel & Luxury",
+    "description": "A premium, data-driven dark fintech aesthetic. Designed for serious collectible card investors and casual collectors. The UI uses deep obsidian blacks, sharp grids, glowing neon accents for AI predictions and market changes, and high-fidelity textures (holographic foils) to mimic the physical joy of collectible cards.",
+    "emotional_goal": "Authoritative, mysterious, predictive, elite, and highly functional."
+  },
+  "typography": {
+    "headings": {
+      "font_family": "Unbounded, sans-serif",
+      "weights": ["400", "700", "900"],
+      "usage": "Use for primary titles, card values, and marketing headers. Must use tight letter spacing (tracking-tight or tracking-tighter) for sizes > 32px."
+    },
+    "body": {
+      "font_family": "IBM Plex Sans, sans-serif",
+      "weights": ["400", "500", "600"],
+      "usage": "Use for all data tables, paragraphs, forms, and general UI text. Ensure high legibility for small numbers."
+    },
+    "mono": {
+      "font_family": "IBM Plex Mono, monospace",
+      "weights": ["400", "600"],
+      "usage": "Use strictly for tickers, UUIDs, profit/loss percentages, and AI prediction score numbers."
+    },
+    "labels": {
+      "styling": "Uppercase, tiny text-xs, wide spacing (tracking-[0.2em]), text-white/50"
+    }
+  },
+  "colors": {
+    "background": {
+      "main": "#05050A",
+      "surface": "#0A0A0C",
+      "surface_hover": "#111116",
+      "surface_glass": "rgba(5, 5, 10, 0.7)"
+    },
+    "text": {
+      "primary": "#FFFFFF",
+      "secondary": "#A1A1AA",
+      "muted": "#52525B"
+    },
+    "brand": {
+      "primary": "#FFFFFF",
+      "accent": "#007AFF"
+    },
+    "semantic": {
+      "profit": "#10B981",
+      "loss": "#FF3B30",
+      "ai_prediction": "#00E5FF",
+      "premium_gold": "#D4AF37"
+    },
+    "borders": {
+      "default": "rgba(255, 255, 255, 0.08)",
+      "highlight": "rgba(255, 255, 255, 0.15)",
+      "glow": "rgba(0, 122, 255, 0.5)"
+    },
+    "forbidden_colors": ["#1B93A4", "#7351B7", "pure #000000"]
+  },
+  "surface_strategies": {
+    "glassmorphism": {
+      "usage": "Sticky headers, floating navs, modals",
+      "classes": "bg-[#05050A]/70 backdrop-blur-xl backdrop-saturate-150 border-b border-white/10 shadow-sm"
+    },
+    "dashboard_cards": {
+      "usage": "Portfolio stats, AI insights, market trends",
+      "classes": "bg-[#0A0A0C] border border-white/10 rounded-xl overflow-hidden"
+    },
+    "trading_cards": {
+      "usage": "Individual collectible card items in marketplace",
+      "classes": "bg-[#111116] border border-white/5 rounded-2xl shadow-lg hover:-translate-y-2 hover:border-white/20 transition-transform duration-300 ease-out relative group overflow-hidden"
+    },
+    "grid_borders": {
+      "usage": "Data-heavy tables or feature grids",
+      "classes": "border-collapse border-r border-b border-white/10"
+    }
+  },
+  "spacing_and_layout": {
+    "general": "Use generative spacing. p-6 or p-8 inside cards to prevent text collision. Mobile-first grids.",
+    "dashboard_grid": {
+      "container": "grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-6 p-6",
+      "summary_widget": "col-span-1",
+      "main_chart": "col-span-2 row-span-2 lg:col-span-3",
+      "feed_list": "col-span-1 row-span-2"
+    },
+    "marketplace_grid": {
+      "container": "grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-6 p-6"
+    }
+  },
+  "motion_and_interactions": {
+    "hover_states": "Cards lift (-translate-y-1), borders brighten to white/20, text color becomes explicit. Use framer-motion for smooth transitions.",
+    "holographic_foil_effect": "For premium collectible cards, use a CSS radial-gradient that shifts position on mousemove to simulate holographic foil reflection. Overlay the holographic texture image with mix-blend-color-dodge.",
+    "chart_animations": "Recharts should load with smooth entry. Use pulse animation for live AI signals (e.g., animate-pulse on cyan indicators).",
+    "page_transitions": "Fade and slight upward slide for all page loads."
+  },
+  "component_strategies": {
+    "forms_and_inputs": "Use Shadcn customized components. Inputs should have bg-white/5, border-white/10, focus:border-white/30 focus:ring-1 focus:ring-white/30.",
+    "buttons": "Pill-shaped or rounded-lg. Primary: bg-white text-black hover:bg-gray-200. Accent/Buy: bg-[#007AFF] text-white hover:bg-[#005bb5]. AI Button: bg-transparent border border-[#00E5FF] text-[#00E5FF] hover:bg-[#00E5FF]/10.",
+    "charts": "Use Recharts. Line charts with smooth curves, area fills using linear gradients (e.g., Green for profit, Red for loss). Ensure tooltips match the dark theme, using bg-[#0A0A0C] and border-white/10.",
+    "badges": "Tiny, rounded-full, px-2 py-1 text-xs font-mono. E.g., 'AI BUY' in cyan border, '+12%' in green bg-green-500/10 text-green-500."
+  },
+  "media_and_assets": {
+    "icons": "Use @phosphor-icons/react (Duotone or Regular) for premium feel.",
+    "images": [
+      {
+        "category": "hero_background",
+        "url": "https://images.pexels.com/photos/6203470/pexels-photo-6203470.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940",
+        "description": "Neon blue line chart on a grid, use at 20% opacity for dashboard hero or header background."
+      },
+      {
+        "category": "ai_insights_bg",
+        "url": "https://images.pexels.com/photos/7562089/pexels-photo-7562089.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940",
+        "description": "Glowing circuit board, use as background for AI Prediction widget at very low opacity."
+      },
+      {
+        "category": "marketplace_cards",
+        "urls": [
+          "https://images.pexels.com/photos/7809125/pexels-photo-7809125.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940",
+          "https://images.pexels.com/photos/7708408/pexels-photo-7708408.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940",
+          "https://images.pexels.com/photos/7783413/pexels-photo-7783413.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940"
+        ],
+        "description": "Use these for dummy collectible cards in the marketplace and portfolio displays."
+      },
+      {
+        "category": "holographic_texture",
+        "url": "https://images.pexels.com/photos/1998922/pexels-photo-1998922.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940",
+        "description": "Overlay on rare cards in the marketplace with mix-blend-overlay and low opacity."
+      }
+    ]
+  },
+  "libraries": {
+    "charts": "recharts",
+    "motion": "framer-motion",
+    "icons": "@phosphor-icons/react",
+    "toasts": "sonner",
+    "ui_components": "shadcn/ui"
+  },
+  "instructions_to_main_agent": [
+    "You must build a web app with React and FastAPI.",
+    "Implement the dark theme globally by setting the base HTML/Body background to #05050A.",
+    "Create a layout with a Sidebar or Top Navbar (Glassmorphism style).",
+    "The Dashboard must show Portfolio Value, a large interactive Rechart (LineChart with Area gradient), and a grid of top moving cards.",
+    "The Marketplace should display a grid of cards using the provided images. Add hover effects using framer-motion that tilt the card slightly and reveal the holographic texture.",
+    "The AI Predictions page/widget should emphasize the Cyan (#00E5FF) color, showing risk scores and buy/sell signals.",
+    "For tables (Portfolio holdings), use a clean border-bottom layout with mono-spaced numbers for prices and percentages.",
+    "Ensure all interactive elements have explicit hover and focus states.",
+    "Add data-testid attributes to all buttons, links, and forms."
+  ],
+  "universal_guidelines_for_main_agent": [
+    "Do not converge toward generic outputs. Avoid 'AI slop' aesthetic.",
+    "Create depth through layered design elements with z-index hierarchy and glass-morphism.",
+    "DO NOT use complete transparent background in header or dropdowns. Always add bg with opacity and blur.",
+    "DO NOT apply universal transition (transition: all). Use specific transitions (e.g., transition-colors, transition-transform).",
+    "DO NOT center align the app container (.App { text-align: center; } is forbidden). Left align dense content and forms.",
+    "Always use modern button styles (pill-shaped or sharp with interaction animations).",
+    "NEVER use AI assistant Emoji characters for icons.",
+    "Use generous spacing (p-6, p-8) and avoid cramped designs.",
+    "Include micro-animations for interactions (hover states, focus rings).",
+    "Use Sonner for toasts. Customize Sonner to match the dark theme.",
+    "Components MUST use named exports; Pages MUST use default exports."
+  ]
+}
