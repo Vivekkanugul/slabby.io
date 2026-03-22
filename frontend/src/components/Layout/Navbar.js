@@ -1,6 +1,6 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-import { LayoutDashboard, Store, Briefcase, Brain, User, LogOut, Menu, X } from 'lucide-react';
+import { LayoutDashboard, Store, Briefcase, Brain, User, LogOut, Menu, X, BarChart3 } from 'lucide-react';
 import { useState } from 'react';
 import { Button } from '../ui/button';
 import {
@@ -21,6 +21,7 @@ export const Navbar = () => {
     { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { to: '/marketplace', label: 'Marketplace', icon: Store },
     { to: '/portfolio', label: 'Portfolio', icon: Briefcase },
+    { to: '/analytics', label: 'Analytics', icon: BarChart3 },
     { to: '/ai-insights', label: 'AI Insights', icon: Brain },
   ];
 
@@ -29,7 +30,7 @@ export const Navbar = () => {
     navigate('/');
   };
 
-  const isActive = (path) => location.pathname === path;
+  const isActive = (path) => location.pathname === path || location.pathname.startsWith(path + '/');
 
   return (
     <nav className="sticky top-0 z-50 glass border-b border-white/10">

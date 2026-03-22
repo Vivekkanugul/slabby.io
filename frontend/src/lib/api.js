@@ -40,4 +40,29 @@ export const analyzeCardWithAI = (cardId) => api.post('/predictions/analyze', { 
 // Stats
 export const getMarketOverview = () => api.get('/stats/market-overview');
 
+// ============ ADVANCED ANALYTICS ============
+
+// What-If Simulator
+export const runWhatIfScenario = (data) => api.post('/analytics/what-if', data);
+
+// Sentiment Analysis
+export const getCardSentiment = (cardId) => api.get(`/analytics/sentiment/${cardId}`);
+export const getSentimentHeatmap = () => api.get('/analytics/sentiment-heatmap');
+
+// Grade Probability Calculator
+export const calculateGradeProbability = (cardId, currentGrade) => 
+  api.post(`/analytics/grade-probability?card_id=${cardId}&current_raw_grade=${currentGrade || 'raw'}`);
+
+// Portfolio Stress Test
+export const runStressTest = (data) => api.post('/analytics/stress-test', data);
+
+// Arbitrage Finder
+export const findArbitrageOpportunities = () => api.get('/analytics/arbitrage');
+
+// Smart Alerts
+export const getSmartAlerts = () => api.get('/analytics/smart-alerts');
+
+// Advanced Portfolio Metrics
+export const getAdvancedPortfolioMetrics = () => api.get('/analytics/portfolio-metrics');
+
 export default api;

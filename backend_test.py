@@ -341,6 +341,92 @@ class CardWiseAPITester:
             200
         )
 
+    def test_analytics_endpoints(self, card_id):
+        """Test advanced analytics endpoints"""
+        print("\n🧠 Testing Advanced Analytics Endpoints...")
+        
+        if not self.token:
+            print("   ⚠️  No auth token - skipping analytics tests")
+            return
+
+        # Test What-If Simulator
+        if card_id:
+            whatif_data = {
+                "card_id": card_id,
+                "scenario_type": "trade",
+                "scenario_details": "Trade to Lakers"
+            }
+            self.run_test(
+                "What-If Simulator",
+                "POST",
+                "analytics/what-if",
+                200,
+                data=whatif_data
+            )
+
+        # Test Sentiment Analysis
+        if card_id:
+            self.run_test(
+                "Get Card Sentiment",
+                "GET",
+                f"analytics/sentiment/{card_id}",
+                200
+            )
+
+        # Test Sentiment Heatmap
+        self.run_test(
+            "Get Sentiment Heatmap",
+            "GET",
+            "analytics/sentiment-heatmap",
+            200
+        )
+
+        # Test Grade Probability Calculator
+        if card_id:
+            self.run_test(
+                "Calculate Grade Probability",
+                "POST",
+                f"analytics/grade-probability?card_id={card_id}&current_raw_grade=raw",
+                200
+            )
+
+        # Test Portfolio Stress Test
+        stress_data = {
+            "scenario": "market_crash",
+            "severity": 0.2
+        }
+        self.run_test(
+            "Portfolio Stress Test",
+            "POST",
+            "analytics/stress-test",
+            200,
+            data=stress_data
+        )
+
+        # Test Arbitrage Finder
+        self.run_test(
+            "Find Arbitrage Opportunities",
+            "GET",
+            "analytics/arbitrage",
+            200
+        )
+
+        # Test Smart Alerts
+        self.run_test(
+            "Get Smart Alerts",
+            "GET",
+            "analytics/smart-alerts",
+            200
+        )
+
+        # Test Advanced Portfolio Metrics
+        self.run_test(
+            "Get Advanced Portfolio Metrics",
+            "GET",
+            "analytics/portfolio-metrics",
+            200
+        )
+
     def run_all_tests(self):
         """Run complete test suite"""
         print("🚀 Starting CardWise API Test Suite")
@@ -364,6 +450,9 @@ class CardWiseAPITester:
         
         # Test stats endpoints
         self.test_stats_endpoints()
+
+        # Test advanced analytics endpoints
+        self.test_analytics_endpoints(card_id)
 
         # Print summary
         print("\n" + "=" * 60)

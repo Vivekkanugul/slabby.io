@@ -14,6 +14,10 @@ import CardDetail from "./pages/CardDetail";
 import Portfolio from "./pages/Portfolio";
 import AIInsights from "./pages/AIInsights";
 import Profile from "./pages/Profile";
+import Analytics from "./pages/Analytics";
+import WhatIfSimulator from "./pages/WhatIfSimulator";
+import GradeCalculator from "./pages/GradeCalculator";
+import StressTest from "./pages/StressTest";
 
 // Protected Route wrapper
 const ProtectedRoute = () => {
@@ -87,6 +91,10 @@ function AppRoutes() {
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/portfolio" element={<Portfolio />} />
         <Route path="/ai-insights" element={<AIInsights />} />
+        <Route path="/analytics" element={<Analytics />} />
+        <Route path="/analytics/simulator" element={<WhatIfSimulator />} />
+        <Route path="/analytics/grading" element={<GradeCalculator />} />
+        <Route path="/analytics/stress-test" element={<StressTest />} />
         <Route path="/profile" element={<Profile />} />
       </Route>
 
