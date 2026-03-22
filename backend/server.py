@@ -588,6 +588,203 @@ async def get_all_player_performance():
             })
     return results
 
+# ============ HOLD PROJECTOR ENGINE ============
+
+class HoldProjectionRequest(BaseModel):
+    card_id: str
+    purchase_price: Optional[float] = None  # defaults to current price
+    hold_months: int = 12  # how many months to hold
+
+def calculate_hold_projection(card: dict, purchase_price: float, hold_months: int) -> dict:
+    """Project card value over a hold period based on player profile, market dynamics, and performance"""
+    current = card["current_price"]
+    sport = card["category"]
+    status = card.get("player_status", "active")
+    age_factor = 1.0  # how card age affects growth
+    
+    # Player archetype determines growth curves
+    # Prospects: high upside, high variance
+    # Active stars: moderate growth, moderate variance
+    # Veterans/declining: low growth, lower variance
+    # Retired HOF: slow steady appreciation
+    # Retired non-HOF/deceased: scarcity-driven, very slow
+    
+    perf = generate_player_performance(card["id"])
+    trend = perf.get("trend_direction", "stable") if perf and perf.get("has_current_data") else "stable"
+    perf_impact = perf.get("performance_impact_score", 0) if perf and perf.get("has_current_data") else 0
+    
+    # Determine player archetype
+    if status in ["retired", "deceased"]:
+        if card.get("hall_of_fame"):
+            archetype = "hof_legend"
+        else:
+            archetype = "retired"
+    elif card.get("rarity") in ["Legendary"]:
+        archetype = "established_star"
+    elif card["price_change_pct"] > 15 or trend == "rising":
+        archetype = "prospect_hot"
+    elif card["price_change_pct"] < -5 or trend == "declining":
+        archetype = "declining"
+    else:
+        archetype = "active_stable"
+    
+    # Growth parameters per archetype: (annual_bull, annual_base, annual_bear, volatility)
+    archetype_params = {
+        "prospect_hot":     {"bull_annual": 0.80, "base_annual": 0.25, "bear_annual": -0.35, "vol": 0.45, "label": "Hot Prospect"},
+        "established_star": {"bull_annual": 0.35, "base_annual": 0.12, "bear_annual": -0.15, "vol": 0.22, "label": "Established Star"},
+        "active_stable":    {"bull_annual": 0.25, "base_annual": 0.08, "bear_annual": -0.20, "vol": 0.25, "label": "Active Player"},
+        "declining":        {"bull_annual": 0.10, "base_annual": -0.05, "bear_annual": -0.30, "vol": 0.30, "label": "Declining Trend"},
+        "hof_legend":       {"bull_annual": 0.15, "base_annual": 0.06, "bear_annual": -0.08, "vol": 0.12, "label": "HOF Legend"},
+        "retired":          {"bull_annual": 0.08, "base_annual": 0.03, "bear_annual": -0.10, "vol": 0.15, "label": "Retired"},
+    }
+    
+    params = archetype_params.get(archetype, archetype_params["active_stable"])
+    
+    # Adjust based on live performance
+    perf_adj = perf_impact * 0.002  # small adjustment per impact score
+    
+    # Grade premium factor (PSA 10 appreciates faster)
+    grade_boost = 0.0
+    if "PSA 10" in card.get("grade", ""):
+        grade_boost = 0.03  # 3% annual premium for gem mint
+    elif "PSA 9" in card.get("grade", "") or "BGS 9.5" in card.get("grade", ""):
+        grade_boost = 0.015
+    
+    # Generate projections at each time point
+    time_points = []
+    months_to_check = [1, 3, 6, 12, 18, 24, 36, 60]
+    
+    for m in months_to_check:
+        if m > hold_months:
+            break
+        
+        years = m / 12
+        
+        # Compound growth for each scenario
+        bull_growth = (1 + params["bull_annual"] + perf_adj + grade_boost) ** years
+        base_growth = (1 + params["base_annual"] + perf_adj * 0.5 + grade_boost) ** years
+        bear_growth = (1 + params["bear_annual"] + perf_adj * 0.3) ** years
+        
+        bull_value = round(current * bull_growth, 2)
+        base_value = round(current * base_growth, 2)
+        bear_value = round(current * bear_growth, 2)
+        
+        # Probability shifts over time (longer holds = more uncertain)
+        uncertainty = min(0.4, years * 0.08)
+        bull_prob = max(10, round(20 + (perf_impact * 0.3) - uncertainty * 30))
+        bear_prob = max(10, round(25 - (perf_impact * 0.3) - uncertainty * 10))
+        base_prob = 100 - bull_prob - bear_prob
+        
+        # P&L from purchase price
+        bull_pnl = round(bull_value - purchase_price, 2)
+        base_pnl = round(base_value - purchase_price, 2)
+        bear_pnl = round(bear_value - purchase_price, 2)
+        
+        time_points.append({
+            "months": m,
+            "label": f"{m}mo" if m < 12 else f"{m // 12}yr" if m % 12 == 0 else f"{m // 12}yr {m % 12}mo",
+            "bull": {"value": bull_value, "pnl": bull_pnl, "pnl_pct": round((bull_pnl / purchase_price) * 100, 1), "probability": bull_prob},
+            "base": {"value": base_value, "pnl": base_pnl, "pnl_pct": round((base_pnl / purchase_price) * 100, 1), "probability": base_prob},
+            "bear": {"value": bear_value, "pnl": bear_pnl, "pnl_pct": round((bear_pnl / purchase_price) * 100, 1), "probability": bear_prob},
+        })
+    
+    # Also add the exact hold_months if not in the list
+    if hold_months not in months_to_check:
+        years = hold_months / 12
+        bull_growth = (1 + params["bull_annual"] + perf_adj + grade_boost) ** years
+        base_growth = (1 + params["base_annual"] + perf_adj * 0.5 + grade_boost) ** years
+        bear_growth = (1 + params["bear_annual"] + perf_adj * 0.3) ** years
+        bull_value = round(current * bull_growth, 2)
+        base_value = round(current * base_growth, 2)
+        bear_value = round(current * bear_growth, 2)
+        uncertainty = min(0.4, years * 0.08)
+        bull_prob = max(10, round(20 + (perf_impact * 0.3) - uncertainty * 30))
+        bear_prob = max(10, round(25 - (perf_impact * 0.3) - uncertainty * 10))
+        base_prob = 100 - bull_prob - bear_prob
+        bull_pnl = round(bull_value - purchase_price, 2)
+        base_pnl = round(base_value - purchase_price, 2)
+        bear_pnl = round(bear_value - purchase_price, 2)
+        time_points.append({
+            "months": hold_months,
+            "label": f"{hold_months}mo" if hold_months < 12 else f"{hold_months // 12}yr" if hold_months % 12 == 0 else f"{hold_months // 12}yr {hold_months % 12}mo",
+            "bull": {"value": bull_value, "pnl": bull_pnl, "pnl_pct": round((bull_pnl / purchase_price) * 100, 1), "probability": bull_prob},
+            "base": {"value": base_value, "pnl": base_pnl, "pnl_pct": round((base_pnl / purchase_price) * 100, 1), "probability": base_prob},
+            "bear": {"value": bear_value, "pnl": bear_pnl, "pnl_pct": round((bear_pnl / purchase_price) * 100, 1), "probability": bear_prob},
+        })
+        time_points.sort(key=lambda x: x["months"])
+    
+    # Key catalysts that could swing value
+    catalysts = []
+    if status == "active":
+        if sport in ["Basketball", "Football", "Hockey"]:
+            catalysts.append({"event": "Championship Win", "impact": "+25-40%", "timeframe": "Within season"})
+            catalysts.append({"event": "MVP Award", "impact": "+15-25%", "timeframe": "End of season"})
+            catalysts.append({"event": "Injury (Season-ending)", "impact": "-20-35%", "timeframe": "Immediate"})
+        if sport == "Baseball":
+            catalysts.append({"event": "World Series Win", "impact": "+20-30%", "timeframe": "October"})
+            catalysts.append({"event": "All-Star Selection", "impact": "+5-10%", "timeframe": "Mid-season"})
+        catalysts.append({"event": "Record-Breaking Season", "impact": "+30-50%", "timeframe": "During season"})
+        catalysts.append({"event": "Trade to Contender", "impact": "+10-20%", "timeframe": "Trade deadline"})
+        if trend == "declining":
+            catalysts.append({"event": "Retirement Announcement", "impact": "-15-30%", "timeframe": "Off-season"})
+    elif card.get("hall_of_fame"):
+        catalysts.append({"event": "Documentary/Film Release", "impact": "+5-15%", "timeframe": "Cultural moments"})
+        catalysts.append({"event": "Anniversary Milestone", "impact": "+5-10%", "timeframe": "Yearly"})
+    catalysts.append({"event": "Market Boom/Crash", "impact": "+-20%", "timeframe": "Unpredictable"})
+    catalysts.append({"event": "PSA Population Increase", "impact": "-5-15%", "timeframe": "Ongoing"})
+    
+    # Recommendation
+    final_point = time_points[-1]
+    expected_value = (final_point["bull"]["value"] * final_point["bull"]["probability"] / 100 +
+                     final_point["base"]["value"] * final_point["base"]["probability"] / 100 +
+                     final_point["bear"]["value"] * final_point["bear"]["probability"] / 100)
+    expected_pnl = round(expected_value - purchase_price, 2)
+    expected_pnl_pct = round((expected_pnl / purchase_price) * 100, 1)
+    
+    if expected_pnl_pct > 15:
+        recommendation = "strong_hold"
+        rec_label = f"Strong Hold — Expected {expected_pnl_pct}% return over {final_point['label']}"
+    elif expected_pnl_pct > 5:
+        recommendation = "hold"
+        rec_label = f"Hold — Modest {expected_pnl_pct}% expected return"
+    elif expected_pnl_pct > -5:
+        recommendation = "neutral"
+        rec_label = f"Neutral — Marginal {expected_pnl_pct}% expected return"
+    else:
+        recommendation = "consider_selling"
+        rec_label = f"Consider Selling — Expected {expected_pnl_pct}% return"
+    
+    return {
+        "card_id": card["id"],
+        "card_name": card["name"],
+        "player_name": card["player_name"],
+        "sport": card["category"],
+        "team": card["team"],
+        "archetype": params["label"],
+        "current_price": current,
+        "purchase_price": purchase_price,
+        "hold_months": hold_months,
+        "projections": time_points,
+        "expected_value": round(expected_value, 2),
+        "expected_pnl": expected_pnl,
+        "expected_pnl_pct": expected_pnl_pct,
+        "recommendation": recommendation,
+        "recommendation_label": rec_label,
+        "catalysts": catalysts,
+        "grade": card["grade"],
+        "rarity": card["rarity"],
+        "performance_trend": trend,
+        "performance_impact_score": perf_impact,
+    }
+
+@api_router.post("/projections/hold")
+async def get_hold_projection(req: HoldProjectionRequest):
+    card = next((c for c in MOCK_CARDS if c["id"] == req.card_id), None)
+    if not card:
+        raise HTTPException(status_code=404, detail="Card not found")
+    purchase_price = req.purchase_price or card["current_price"]
+    return calculate_hold_projection(card, purchase_price, req.hold_months)
+
 # ============ AUTH ROUTES ============
 
 @api_router.post("/auth/register", response_model=TokenResponse)

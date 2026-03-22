@@ -78,4 +78,7 @@ export const getWatchlistAlerts = () => api.get('/watchlist/alerts');
 export const getPlayerPerformance = (cardId) => api.get(`/players/${cardId}/performance`);
 export const getAllPlayerPerformance = () => api.get('/players/performance/all');
 
+// ============ HOLD PROJECTOR ============
+export const getHoldProjection = (data) => api.post('/projections/hold', data);
+
 export default api;

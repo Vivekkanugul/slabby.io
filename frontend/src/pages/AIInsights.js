@@ -1,14 +1,15 @@
 import { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
-import { getPredictions, getCards, getCardValuation, getPlayerPerformance } from '../lib/api';
+import { getPredictions, getCards, getCardValuation, getPlayerPerformance, getHoldProjection } from '../lib/api';
 import { Button } from '../components/ui/button';
+import { Input } from '../components/ui/input';
 import { Progress } from '../components/ui/progress';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
 import {
   Sparkles, TrendingUp, TrendingDown, Loader2, Activity,
   Target, BarChart3, LineChart, Zap, AlertTriangle, Shield,
   DollarSign, Users, FileText, Layers, Gauge, ArrowUpRight,
-  ArrowDownRight, Minus, Clock, Hash, Box
+  ArrowDownRight, Minus, Clock, Hash, Box, Timer
 } from 'lucide-react';
 import { formatCurrency, formatPercent, getPriceChangeColor } from '../lib/utils';
 import {
@@ -154,6 +155,9 @@ export default function AIInsights() {
                   </TabsTrigger>
                   <TabsTrigger value="performance" className="data-[state=active]:bg-white/10 text-xs" data-testid="tab-performance">
                     <Activity className="w-3.5 h-3.5 mr-1.5" />Player Stats
+                  </TabsTrigger>
+                  <TabsTrigger value="hold" className="data-[state=active]:bg-white/10 text-xs" data-testid="tab-hold">
+                    <Timer className="w-3.5 h-3.5 mr-1.5" />Hold Projector
                   </TabsTrigger>
                 </TabsList>
 
@@ -492,10 +496,271 @@ export default function AIInsights() {
                 <TabsContent value="performance" className="space-y-4">
                   <PlayerStatsTab perf={playerPerf} loading={perfLoading} />
                 </TabsContent>
+
+                {/* HOLD PROJECTOR TAB */}
+                <TabsContent value="hold" className="space-y-4">
+                  <HoldProjectorTab card={selectedCard} />
+                </TabsContent>
               </Tabs>
             </>
           )}
         </div>
+      </div>
+    </div>
+  );
+}
+
+// ===== HOLD PROJECTOR TAB =====
+
+function HoldProjectorTab({ card }) {
+  const [purchasePrice, setPurchasePrice] = useState('');
+  const [holdMonths, setHoldMonths] = useState(12);
+  const [projection, setProjection] = useState(null);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (card?.card) {
+      setPurchasePrice(card.card.current_price.toString());
+      runProjection(card.card.current_price, 12);
+    }
+  }, [card?.card_id]);
+
+  const runProjection = async (price, months) => {
+    if (!card?.card_id) return;
+    setLoading(true);
+    try {
+      const res = await getHoldProjection({
+        card_id: card.card_id,
+        purchase_price: parseFloat(price) || card.card.current_price,
+        hold_months: months,
+      });
+      setProjection(res.data);
+    } catch (err) {
+      console.error('Projection error:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSubmit = () => {
+    runProjection(purchasePrice, holdMonths);
+  };
+
+  const holdOptions = [
+    { label: '3 Months', value: 3 },
+    { label: '6 Months', value: 6 },
+    { label: '1 Year', value: 12 },
+    { label: '2 Years', value: 24 },
+    { label: '3 Years', value: 36 },
+    { label: '5 Years', value: 60 },
+  ];
+
+  return (
+    <>
+      {/* Input Controls */}
+      <div className="bg-[#0A0A0C] border border-white/10 rounded-xl p-5">
+        <div className="flex items-center gap-2 mb-4">
+          <Timer className="w-5 h-5 text-[#00E5FF]" />
+          <h3 className="font-medium text-white text-sm">Hold Duration Projector</h3>
+        </div>
+        <p className="text-xs text-zinc-500 mb-4">Enter your purchase price and hold duration to see projected returns.</p>
+        
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div>
+            <label className="text-[10px] text-zinc-500 uppercase tracking-wider mb-1.5 block">Purchase Price ($)</label>
+            <Input
+              type="number"
+              value={purchasePrice}
+              onChange={(e) => setPurchasePrice(e.target.value)}
+              placeholder={card?.card?.current_price?.toString()}
+              className="bg-white/5 border-white/10 text-white font-mono"
+              data-testid="hold-purchase-price"
+            />
+            <span className="text-[10px] text-zinc-600 mt-1 block">Current: {formatCurrency(card?.card?.current_price, true)}</span>
+          </div>
+          <div>
+            <label className="text-[10px] text-zinc-500 uppercase tracking-wider mb-1.5 block">Hold Duration</label>
+            <div className="grid grid-cols-3 gap-1.5">
+              {holdOptions.map(opt => (
+                <button
+                  key={opt.value}
+                  onClick={() => { setHoldMonths(opt.value); runProjection(purchasePrice, opt.value); }}
+                  data-testid={`hold-${opt.value}mo`}
+                  className={`px-2 py-2 rounded-lg text-xs font-medium transition-all ${
+                    holdMonths === opt.value
+                      ? 'bg-[#007AFF]/20 text-[#007AFF] border border-[#007AFF]/40'
+                      : 'bg-white/5 text-zinc-400 border border-white/10 hover:bg-white/10'
+                  }`}
+                >
+                  {opt.label}
+                </button>
+              ))}
+            </div>
+          </div>
+          <div className="flex items-end">
+            <Button
+              onClick={handleSubmit}
+              className="w-full bg-[#007AFF] hover:bg-[#005bb5] text-white"
+              disabled={loading}
+              data-testid="run-projection-btn"
+            >
+              {loading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Target className="w-4 h-4 mr-2" />}
+              Project Returns
+            </Button>
+          </div>
+        </div>
+      </div>
+
+      {loading && <div className="flex items-center justify-center py-12"><Loader2 className="w-6 h-6 animate-spin text-[#007AFF]" /></div>}
+
+      {projection && !loading && (
+        <>
+          {/* Recommendation Banner */}
+          <div className={`rounded-xl p-4 border flex items-center justify-between ${
+            projection.recommendation === 'strong_hold' ? 'bg-emerald-500/10 border-emerald-500/20' :
+            projection.recommendation === 'hold' ? 'bg-blue-500/10 border-blue-500/20' :
+            projection.recommendation === 'consider_selling' ? 'bg-red-500/10 border-red-500/20' :
+            'bg-white/5 border-white/10'
+          }`}>
+            <div className="flex items-center gap-3">
+              {projection.recommendation === 'strong_hold' ? <TrendingUp className="w-5 h-5 text-emerald-400" /> :
+               projection.recommendation === 'hold' ? <Shield className="w-5 h-5 text-blue-400" /> :
+               projection.recommendation === 'consider_selling' ? <AlertTriangle className="w-5 h-5 text-red-400" /> :
+               <Minus className="w-5 h-5 text-zinc-400" />}
+              <div>
+                <span className={`text-sm font-semibold ${
+                  projection.recommendation === 'strong_hold' ? 'text-emerald-400' :
+                  projection.recommendation === 'hold' ? 'text-blue-400' :
+                  projection.recommendation === 'consider_selling' ? 'text-red-400' : 'text-zinc-300'
+                }`}>{projection.recommendation_label}</span>
+                <span className="text-[10px] text-zinc-500 block">{projection.archetype} &middot; {projection.grade} &middot; Performance: {projection.performance_trend}</span>
+              </div>
+            </div>
+            <div className="text-right">
+              <span className="text-[10px] text-zinc-500 block">Expected Value</span>
+              <span className="font-heading font-bold text-lg text-white">{formatCurrency(projection.expected_value, true)}</span>
+              <span className={`text-xs font-mono block ${getPriceChangeColor(projection.expected_pnl)}`}>
+                {projection.expected_pnl > 0 ? '+' : ''}{formatCurrency(projection.expected_pnl)} ({projection.expected_pnl_pct > 0 ? '+' : ''}{projection.expected_pnl_pct}%)
+              </span>
+            </div>
+          </div>
+
+          {/* Projection Chart */}
+          <div className="bg-[#0A0A0C] border border-white/10 rounded-xl p-5">
+            <h3 className="font-medium text-white mb-4 text-sm">Projected Value Over Time</h3>
+            <ResponsiveContainer width="100%" height={280}>
+              <AreaChart data={projection.projections}>
+                <defs>
+                  <linearGradient id="bullGrad" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="#10B981" stopOpacity={0.15} />
+                    <stop offset="100%" stopColor="#10B981" stopOpacity={0} />
+                  </linearGradient>
+                  <linearGradient id="baseGrad" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="#007AFF" stopOpacity={0.15} />
+                    <stop offset="100%" stopColor="#007AFF" stopOpacity={0} />
+                  </linearGradient>
+                </defs>
+                <XAxis dataKey="label" axisLine={false} tickLine={false} tick={{ fill: '#52525B', fontSize: 10 }} />
+                <YAxis axisLine={false} tickLine={false} tick={{ fill: '#52525B', fontSize: 10 }} tickFormatter={v => `$${v >= 1000 ? (v/1000).toFixed(0)+'K' : v}`} domain={['auto', 'auto']} />
+                <Tooltip content={<ProjectionTooltip purchasePrice={projection.purchase_price} />} />
+                <ReferenceLine y={projection.purchase_price} stroke="#F59E0B" strokeDasharray="5 5" label={{ value: 'Buy Price', fill: '#F59E0B', fontSize: 10, position: 'right' }} />
+                <Area type="monotone" dataKey="bull.value" stroke="#10B981" fill="url(#bullGrad)" strokeWidth={2} name="Bull" />
+                <Area type="monotone" dataKey="base.value" stroke="#007AFF" fill="url(#baseGrad)" strokeWidth={2} name="Base" />
+                <Area type="monotone" dataKey="bear.value" stroke="#EF4444" fill="none" strokeWidth={2} strokeDasharray="5 5" name="Bear" />
+              </AreaChart>
+            </ResponsiveContainer>
+            <div className="flex items-center justify-center gap-5 mt-3">
+              {[['#10B981','Bull Case'],['#007AFF','Base Case'],['#EF4444','Bear Case'],['#F59E0B','Buy Price']].map(([c,l])=>(
+                <div key={l} className="flex items-center gap-1.5"><div className="w-4 h-0.5" style={{backgroundColor:c}} /><span className="text-[10px] text-zinc-500">{l}</span></div>
+              ))}
+            </div>
+          </div>
+
+          {/* Scenario Table */}
+          <div className="bg-[#0A0A0C] border border-white/10 rounded-xl p-5">
+            <h3 className="font-medium text-white mb-4 text-sm">Projection Breakdown</h3>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead><tr className="border-b border-white/10">
+                  <th className="text-left text-[10px] text-zinc-500 uppercase p-2.5">Time</th>
+                  <th className="text-center text-[10px] text-emerald-400 uppercase p-2.5" colSpan="2">Bull Case</th>
+                  <th className="text-center text-[10px] text-[#007AFF] uppercase p-2.5" colSpan="2">Base Case</th>
+                  <th className="text-center text-[10px] text-red-400 uppercase p-2.5" colSpan="2">Bear Case</th>
+                </tr>
+                <tr className="border-b border-white/5">
+                  <th className="p-1"></th>
+                  <th className="text-center text-[9px] text-zinc-600 p-1">Value</th>
+                  <th className="text-center text-[9px] text-zinc-600 p-1">P&L</th>
+                  <th className="text-center text-[9px] text-zinc-600 p-1">Value</th>
+                  <th className="text-center text-[9px] text-zinc-600 p-1">P&L</th>
+                  <th className="text-center text-[9px] text-zinc-600 p-1">Value</th>
+                  <th className="text-center text-[9px] text-zinc-600 p-1">P&L</th>
+                </tr>
+                </thead>
+                <tbody>
+                  {projection.projections.map((p, i) => (
+                    <tr key={i} className="border-b border-white/5 hover:bg-white/[0.02]">
+                      <td className="p-2.5 text-white font-medium">{p.label}</td>
+                      <td className="p-2.5 text-center font-mono text-emerald-400">{formatCurrency(p.bull.value, true)}</td>
+                      <td className={`p-2.5 text-center font-mono text-xs ${getPriceChangeColor(p.bull.pnl)}`}>{p.bull.pnl > 0 ? '+' : ''}{p.bull.pnl_pct}%</td>
+                      <td className="p-2.5 text-center font-mono text-[#007AFF]">{formatCurrency(p.base.value, true)}</td>
+                      <td className={`p-2.5 text-center font-mono text-xs ${getPriceChangeColor(p.base.pnl)}`}>{p.base.pnl > 0 ? '+' : ''}{p.base.pnl_pct}%</td>
+                      <td className="p-2.5 text-center font-mono text-red-400">{formatCurrency(p.bear.value, true)}</td>
+                      <td className={`p-2.5 text-center font-mono text-xs ${getPriceChangeColor(p.bear.pnl)}`}>{p.bear.pnl > 0 ? '+' : ''}{p.bear.pnl_pct}%</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          {/* Catalysts */}
+          <div className="bg-[#0A0A0C] border border-white/10 rounded-xl p-5">
+            <h3 className="font-medium text-white mb-4 text-sm">Key Catalysts That Could Swing Value</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+              {projection.catalysts?.map((c, i) => (
+                <div key={i} className="flex items-center justify-between p-3 bg-white/[0.03] rounded-lg border border-white/5">
+                  <div>
+                    <span className="text-xs text-white font-medium">{c.event}</span>
+                    <span className="text-[10px] text-zinc-500 block">{c.timeframe}</span>
+                  </div>
+                  <span className={`text-xs font-mono font-semibold ${c.impact.startsWith('+') ? 'text-emerald-400' : c.impact.startsWith('-') ? 'text-red-400' : 'text-amber-400'}`}>{c.impact}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </>
+      )}
+    </>
+  );
+}
+
+function ProjectionTooltip({ active, payload, purchasePrice }) {
+  if (!active || !payload?.length) return null;
+  const p = payload[0]?.payload;
+  if (!p) return null;
+  return (
+    <div className="bg-[#0E0E12] border border-white/10 rounded-lg p-3 shadow-xl">
+      <p className="text-[10px] text-zinc-400 mb-1.5 font-medium">{p.label}</p>
+      <div className="space-y-1">
+        <div className="flex items-center justify-between gap-4">
+          <span className="text-[10px] text-emerald-400">Bull:</span>
+          <span className="font-mono text-xs text-white">{formatCurrency(p.bull?.value)}</span>
+          <span className={`font-mono text-[10px] ${p.bull?.pnl > 0 ? 'text-emerald-400' : 'text-red-400'}`}>{p.bull?.pnl > 0 ? '+' : ''}{p.bull?.pnl_pct}%</span>
+        </div>
+        <div className="flex items-center justify-between gap-4">
+          <span className="text-[10px] text-[#007AFF]">Base:</span>
+          <span className="font-mono text-xs text-white">{formatCurrency(p.base?.value)}</span>
+          <span className={`font-mono text-[10px] ${p.base?.pnl > 0 ? 'text-emerald-400' : 'text-red-400'}`}>{p.base?.pnl > 0 ? '+' : ''}{p.base?.pnl_pct}%</span>
+        </div>
+        <div className="flex items-center justify-between gap-4">
+          <span className="text-[10px] text-red-400">Bear:</span>
+          <span className="font-mono text-xs text-white">{formatCurrency(p.bear?.value)}</span>
+          <span className={`font-mono text-[10px] ${p.bear?.pnl > 0 ? 'text-emerald-400' : 'text-red-400'}`}>{p.bear?.pnl > 0 ? '+' : ''}{p.bear?.pnl_pct}%</span>
+        </div>
+      </div>
+      <div className="mt-1.5 pt-1.5 border-t border-white/10">
+        <span className="text-[9px] text-zinc-500">Buy Price: {formatCurrency(purchasePrice)}</span>
       </div>
     </div>
   );
