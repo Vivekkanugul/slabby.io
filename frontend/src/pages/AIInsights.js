@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
-import { getPredictions, getCards, getCardValuation } from '../lib/api';
+import { getPredictions, getCards, getCardValuation, getPlayerPerformance } from '../lib/api';
 import { Button } from '../components/ui/button';
 import { Progress } from '../components/ui/progress';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
@@ -23,12 +23,16 @@ export default function AIInsights() {
   const [selectedCard, setSelectedCard] = useState(null);
   const [loading, setLoading] = useState(true);
   const [valuation, setValuation] = useState(null);
+  const [playerPerf, setPlayerPerf] = useState(null);
+  const [perfLoading, setPerfLoading] = useState(false);
 
   useEffect(() => { fetchData(); }, []);
 
   useEffect(() => {
     if (selectedCard?.card_id) {
       getCardValuation(selectedCard.card_id).then(r => setValuation(r.data)).catch(() => setValuation(null));
+      setPerfLoading(true);
+      getPlayerPerformance(selectedCard.card_id).then(r => setPlayerPerf(r.data)).catch(() => setPlayerPerf(null)).finally(() => setPerfLoading(false));
     }
   }, [selectedCard?.card_id]);
 
@@ -147,6 +151,9 @@ export default function AIInsights() {
                   </TabsTrigger>
                   <TabsTrigger value="market" className="data-[state=active]:bg-white/10 text-xs" data-testid="tab-market">
                     <Layers className="w-3.5 h-3.5 mr-1.5" />Market Intel
+                  </TabsTrigger>
+                  <TabsTrigger value="performance" className="data-[state=active]:bg-white/10 text-xs" data-testid="tab-performance">
+                    <Activity className="w-3.5 h-3.5 mr-1.5" />Player Stats
                   </TabsTrigger>
                 </TabsList>
 
@@ -480,11 +487,192 @@ export default function AIInsights() {
                     </ResponsiveContainer>
                   </div>
                 </TabsContent>
+
+                {/* PLAYER STATS TAB */}
+                <TabsContent value="performance" className="space-y-4">
+                  <PlayerStatsTab perf={playerPerf} loading={perfLoading} />
+                </TabsContent>
               </Tabs>
             </>
           )}
         </div>
       </div>
+    </div>
+  );
+}
+
+// ===== PLAYER STATS TAB =====
+
+function PlayerStatsTab({ perf, loading }) {
+  if (loading) return <div className="flex items-center justify-center py-12"><Loader2 className="w-6 h-6 animate-spin text-[#007AFF]" /></div>;
+  if (!perf) return <div className="text-center py-12 text-zinc-500 text-sm">No performance data available</div>;
+
+  if (!perf.has_current_data) {
+    return (
+      <div className="bg-[#0A0A0C] border border-white/10 rounded-xl p-6 text-center">
+        <Shield className="w-10 h-10 text-amber-400 mx-auto mb-3" />
+        <h3 className="text-lg font-medium text-white mb-2">{perf.player_name} — {perf.status === 'retired' ? 'Retired' : 'Legacy'}</h3>
+        <p className="text-zinc-400 text-sm mb-4">{perf.legacy_note}</p>
+        {perf.career_highlights && (
+          <div className="flex items-center justify-center gap-6">
+            {perf.career_highlights.championships > 0 && <div className="text-center"><span className="text-2xl font-bold text-amber-400">{perf.career_highlights.championships}</span><span className="text-[10px] text-zinc-500 block">Championships</span></div>}
+            {perf.career_highlights.hall_of_fame && <div className="text-center"><span className="text-2xl font-bold text-amber-400">HOF</span><span className="text-[10px] text-zinc-500 block">Hall of Fame</span></div>}
+          </div>
+        )}
+        <p className="text-xs text-zinc-500 mt-4">Value driven by scarcity, legacy, and collector demand — not current on-field performance.</p>
+      </div>
+    );
+  }
+
+  const sportConfig = {
+    NBA: { primary: ['points','rebounds','assists','minutes'], gameHeaders: ['Date','OPP','MIN','PTS','REB','AST','STL','BLK','FG%','3P%','W/L','Impact'], gameFields: (g) => [g.date, g.opponent, g.minutes, g.points, g.rebounds, g.assists, g.steals, g.blocks, `${g.fg_pct}%`, `${g.three_pt_pct}%`, g.result, g.impact_score] },
+    MLB: { primary: ['batting_avg','home_runs','rbi'], gameHeaders: ['Date','OPP','AB','H','HR','RBI','R','SB','AVG','W/L','Impact'], gameFields: (g) => [g.date, g.opponent, g.at_bats, g.hits, g.home_runs, g.rbi, g.runs, g.stolen_bases, g.batting_avg?.toFixed(3), g.result, g.impact_score] },
+    NFL: { primary: ['passing_yards','passing_tds','passer_rating'], gameHeaders: ['Date','OPP','PASS YDS','PASS TD','INT','RUSH YDS','CMP%','RTG','W/L','Impact'], gameFields: (g) => [g.date, g.opponent, g.passing_yards, g.passing_tds, g.interceptions, g.rushing_yards, `${g.completion_pct}%`, g.passer_rating, g.result, g.impact_score] },
+    NHL: { primary: ['goals','assists','points','shots'], gameHeaders: ['Date','OPP','TOI','G','A','PTS','SOG','+/-','HIT','W/L','Impact'], gameFields: (g) => [g.date, g.opponent, g.ice_time, g.goals, g.assists, g.points, g.shots, g.plus_minus > 0 ? `+${g.plus_minus}` : g.plus_minus, g.hits, g.result, g.impact_score] },
+  };
+
+  const config = sportConfig[perf.sport] || sportConfig.NBA;
+  const impactColor = perf.performance_impact.includes('bullish') ? 'text-emerald-400' : perf.performance_impact.includes('bearish') ? 'text-red-400' : 'text-zinc-400';
+  const impactBg = perf.performance_impact.includes('bullish') ? 'bg-emerald-500/10 border-emerald-500/20' : perf.performance_impact.includes('bearish') ? 'bg-red-500/10 border-red-500/20' : 'bg-white/5 border-white/10';
+
+  return (
+    <>
+      {/* Performance Impact Banner */}
+      <div className={`${impactBg} border rounded-xl p-4 flex items-center justify-between`}>
+        <div className="flex items-center gap-3">
+          <Activity className={`w-5 h-5 ${impactColor}`} />
+          <div>
+            <span className={`text-sm font-semibold ${impactColor}`}>{perf.performance_impact_label}</span>
+            <span className="text-[10px] text-zinc-500 block">{perf.player_name} &middot; {perf.team} &middot; {perf.sport}</span>
+          </div>
+        </div>
+        <div className="text-right">
+          <span className={`text-lg font-bold font-mono ${impactColor}`}>{perf.performance_impact_score > 0 ? '+' : ''}{perf.performance_impact_score}</span>
+          <span className="text-[10px] text-zinc-500 block">Impact Score</span>
+        </div>
+      </div>
+
+      {/* Streak + Trend */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+        <div className="bg-[#0A0A0C] border border-white/10 rounded-xl p-4">
+          <h4 className="text-xs text-zinc-500 uppercase tracking-wider mb-3">Current Streak</h4>
+          <div className="flex items-center gap-3">
+            <div className={`w-10 h-10 rounded-full flex items-center justify-center ${perf.streak?.type === 'hot' ? 'bg-emerald-500/20' : perf.streak?.type === 'cold' ? 'bg-red-500/20' : 'bg-white/5'}`}>
+              {perf.streak?.type === 'hot' ? <Zap className="w-5 h-5 text-emerald-400" /> : perf.streak?.type === 'cold' ? <TrendingDown className="w-5 h-5 text-red-400" /> : <Minus className="w-5 h-5 text-zinc-400" />}
+            </div>
+            <div>
+              <span className={`text-sm font-semibold ${perf.streak?.type === 'hot' ? 'text-emerald-400' : perf.streak?.type === 'cold' ? 'text-red-400' : 'text-white'}`}>{perf.streak?.label}</span>
+              <span className="text-[10px] text-zinc-500 block">{perf.streak?.description}</span>
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-[#0A0A0C] border border-white/10 rounded-xl p-4">
+          <h4 className="text-xs text-zinc-500 uppercase tracking-wider mb-3">Overall Trend</h4>
+          <div className="flex items-center gap-3">
+            <div className={`w-10 h-10 rounded-full flex items-center justify-center ${perf.trend_direction === 'rising' ? 'bg-emerald-500/20' : perf.trend_direction === 'declining' ? 'bg-red-500/20' : perf.trend_direction === 'inconsistent' ? 'bg-amber-500/20' : 'bg-white/5'}`}>
+              {perf.trend_direction === 'rising' ? <TrendingUp className="w-5 h-5 text-emerald-400" /> : perf.trend_direction === 'declining' ? <TrendingDown className="w-5 h-5 text-red-400" /> : <Activity className="w-5 h-5 text-amber-400" />}
+            </div>
+            <div>
+              <span className={`text-sm font-semibold capitalize ${perf.trend_direction === 'rising' ? 'text-emerald-400' : perf.trend_direction === 'declining' ? 'text-red-400' : perf.trend_direction === 'inconsistent' ? 'text-amber-400' : 'text-white'}`}>{perf.trend_direction}</span>
+              <span className="text-[10px] text-zinc-500 block">Based on last 20 games</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Stat Trends — First 10 vs Last 10 */}
+      <div className="bg-[#0A0A0C] border border-white/10 rounded-xl p-5">
+        <h4 className="text-xs text-zinc-500 uppercase tracking-wider mb-4">Stat Trends (First 10 Games vs Last 10 Games)</h4>
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
+          {Object.entries(perf.trends || {}).map(([key, t]) => (
+            <div key={key} className="p-3 bg-white/[0.03] rounded-lg">
+              <span className="text-[10px] text-zinc-500 uppercase tracking-wider block mb-2">{key.replace(/_/g, ' ')}</span>
+              <div className="flex items-end justify-between">
+                <div>
+                  <span className="text-xs text-zinc-500">{t.first_10}</span>
+                  <span className="text-zinc-600 mx-1">&rarr;</span>
+                  <span className="text-sm font-bold text-white">{t.last_10}</span>
+                </div>
+                <span className={`text-xs font-mono font-semibold flex items-center gap-0.5 ${t.direction === 'up' ? 'text-emerald-400' : t.direction === 'down' ? 'text-red-400' : 'text-zinc-500'}`}>
+                  {t.direction === 'up' ? <ArrowUpRight className="w-3 h-3" /> : t.direction === 'down' ? <ArrowDownRight className="w-3 h-3" /> : <Minus className="w-3 h-3" />}
+                  {t.change_pct > 0 ? '+' : ''}{t.change_pct}%
+                </span>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Impact Chart */}
+      <div className="bg-[#0A0A0C] border border-white/10 rounded-xl p-5">
+        <h4 className="text-xs text-zinc-500 uppercase tracking-wider mb-4">Game Impact Score (Last 20 Games)</h4>
+        <ResponsiveContainer width="100%" height={180}>
+          <ComposedChart data={perf.game_log || []}>
+            <XAxis dataKey="game_number" axisLine={false} tickLine={false} tick={{ fill: '#52525B', fontSize: 10 }} />
+            <YAxis axisLine={false} tickLine={false} tick={{ fill: '#52525B', fontSize: 10 }} domain={[-50, 60]} />
+            <Tooltip content={<ImpactTooltip sport={perf.sport} />} />
+            <ReferenceLine y={0} stroke="#27272A" strokeDasharray="3 3" />
+            <Bar dataKey="impact_score" radius={[3,3,0,0]}>
+              {(perf.game_log || []).map((entry, i) => (
+                <rect key={i} fill={entry.impact_score > 15 ? '#10B981' : entry.impact_score > 0 ? '#007AFF' : entry.impact_score > -15 ? '#F59E0B' : '#EF4444'} />
+              ))}
+            </Bar>
+          </ComposedChart>
+        </ResponsiveContainer>
+        <div className="flex items-center justify-center gap-4 mt-2 flex-wrap">
+          {[['#10B981','Big game'],['#007AFF','Good'],['#F59E0B','Average'],['#EF4444','Poor']].map(([c,l])=>(
+            <div key={l} className="flex items-center gap-1.5"><div className="w-3 h-3 rounded-sm" style={{backgroundColor:c}} /><span className="text-[10px] text-zinc-500">{l}</span></div>
+          ))}
+        </div>
+      </div>
+
+      {/* Game Log */}
+      <div className="bg-[#0A0A0C] border border-white/10 rounded-xl p-5">
+        <h4 className="text-xs text-zinc-500 uppercase tracking-wider mb-4">Game Log (Last 20)</h4>
+        <div className="overflow-x-auto">
+          <table className="w-full text-xs">
+            <thead><tr className="border-b border-white/10">
+              {config.gameHeaders.map(h => <th key={h} className="text-left text-[10px] text-zinc-500 uppercase p-2">{h}</th>)}
+            </tr></thead>
+            <tbody>
+              {[...(perf.game_log || [])].reverse().map((g, i) => {
+                const fields = config.gameFields(g);
+                return (
+                  <tr key={i} className="border-b border-white/5 hover:bg-white/[0.02]">
+                    {fields.map((f, j) => {
+                      const isImpact = j === fields.length - 1;
+                      const isResult = config.gameHeaders[j] === 'W/L';
+                      return (
+                        <td key={j} className={`p-2 font-mono ${isImpact ? (f > 15 ? 'text-emerald-400 font-bold' : f < -15 ? 'text-red-400 font-bold' : 'text-zinc-400') : isResult ? (f === 'W' ? 'text-emerald-400' : 'text-red-400') : 'text-zinc-300'}`}>
+                          {isImpact ? (f > 0 ? `+${f}` : f) : f}
+                        </td>
+                      );
+                    })}
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </>
+  );
+}
+
+function ImpactTooltip({ active, payload, sport }) {
+  if (!active || !payload?.length) return null;
+  const g = payload[0]?.payload;
+  if (!g) return null;
+  return (
+    <div className="bg-[#0E0E12] border border-white/10 rounded-lg p-2.5 shadow-xl max-w-xs">
+      <p className="text-[10px] text-zinc-400">Game {g.game_number} &middot; {g.date} vs {g.opponent}</p>
+      <p className={`font-mono text-sm font-bold ${g.impact_score > 0 ? 'text-emerald-400' : 'text-red-400'}`}>Impact: {g.impact_score > 0 ? '+' : ''}{g.impact_score}</p>
+      {sport === 'NBA' && <p className="text-[10px] text-zinc-300">{g.points}pts {g.rebounds}reb {g.assists}ast</p>}
+      {sport === 'MLB' && <p className="text-[10px] text-zinc-300">{g.hits}H {g.home_runs}HR {g.rbi}RBI</p>}
+      {sport === 'NFL' && <p className="text-[10px] text-zinc-300">{g.passing_yards}yds {g.passing_tds}TD {g.interceptions}INT</p>}
+      {sport === 'NHL' && <p className="text-[10px] text-zinc-300">{g.goals}G {g.assists}A {g.shots}SOG</p>}
+      <p className={`text-[10px] ${g.result === 'W' ? 'text-emerald-400' : 'text-red-400'}`}>{g.result}</p>
     </div>
   );
 }

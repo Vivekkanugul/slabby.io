@@ -279,7 +279,314 @@ MOCK_CARDS = [
     {"id": "card_008", "name": "2020 Panini National Treasures Joe Burrow RC", "player_name": "Joe Burrow", "team": "Cincinnati Bengals", "year": 2020, "set_name": "National Treasures", "grade": "BGS 9.5", "current_price": 15500, "previous_price": 14000, "price_change_pct": 10.71, "image_url": "https://images.pexels.com/photos/4219606/pexels-photo-4219606.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940", "category": "Football", "rarity": "Ultra Rare", "last_sold": "2024-01-14", "volume_24h": 12, "market_cap": 3100000, "volatility_30d": 22.8, "sharpe_ratio": 1.6, "beta": 1.35, "correlation_market": 0.62, "player_status": "active", "hall_of_fame": False, "championships": 0},
     {"id": "card_009", "name": "2018 Panini Prizm Trae Young RC #78", "player_name": "Trae Young", "team": "Atlanta Hawks", "year": 2018, "set_name": "Panini Prizm", "grade": "PSA 10", "current_price": 1850, "previous_price": 1950, "price_change_pct": -5.13, "image_url": "https://images.pexels.com/photos/5965643/pexels-photo-5965643.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940", "category": "Basketball", "rarity": "Rare", "last_sold": "2024-01-12", "volume_24h": 65, "market_cap": 925000, "volatility_30d": 29.4, "sharpe_ratio": 1.1, "beta": 1.42, "correlation_market": 0.48, "player_status": "active", "hall_of_fame": False, "championships": 0},
     {"id": "card_010", "name": "2023 Topps Chrome Victor Wembanyama RC", "player_name": "Victor Wembanyama", "team": "San Antonio Spurs", "year": 2023, "set_name": "Topps Chrome", "grade": "PSA 10", "current_price": 3200, "previous_price": 2400, "price_change_pct": 33.33, "image_url": "https://images.pexels.com/photos/7562089/pexels-photo-7562089.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940", "category": "Basketball", "rarity": "Ultra Rare", "last_sold": "2024-01-20", "volume_24h": 180, "market_cap": 1600000, "volatility_30d": 45.2, "sharpe_ratio": 2.8, "beta": 1.95, "correlation_market": 0.38, "player_status": "active", "hall_of_fame": False, "championships": 0},
+    # NHL Cards
+    {"id": "card_011", "name": "2015 Upper Deck Young Guns Connor McDavid RC #201", "player_name": "Connor McDavid", "team": "Edmonton Oilers", "year": 2015, "set_name": "Upper Deck", "grade": "PSA 10", "current_price": 95000, "previous_price": 88000, "price_change_pct": 7.95, "image_url": "https://images.pexels.com/photos/2570139/pexels-photo-2570139.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940", "category": "Hockey", "rarity": "Legendary", "last_sold": "2024-01-18", "volume_24h": 8, "market_cap": 4750000, "volatility_30d": 15.3, "sharpe_ratio": 2.2, "beta": 0.92, "correlation_market": 0.65, "player_status": "active", "hall_of_fame": False, "championships": 0},
+    {"id": "card_012", "name": "2019 Upper Deck Young Guns Cale Makar RC #493", "player_name": "Cale Makar", "team": "Colorado Avalanche", "year": 2019, "set_name": "Upper Deck", "grade": "PSA 10", "current_price": 4200, "previous_price": 3800, "price_change_pct": 10.53, "image_url": "https://images.pexels.com/photos/3621104/pexels-photo-3621104.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940", "category": "Hockey", "rarity": "Ultra Rare", "last_sold": "2024-01-16", "volume_24h": 25, "market_cap": 1260000, "volatility_30d": 20.1, "sharpe_ratio": 1.7, "beta": 1.12, "correlation_market": 0.58, "player_status": "active", "hall_of_fame": False, "championships": 1},
+    {"id": "card_013", "name": "2023 Upper Deck Young Guns Connor Bedard RC", "player_name": "Connor Bedard", "team": "Chicago Blackhawks", "year": 2023, "set_name": "Upper Deck", "grade": "PSA 10", "current_price": 1800, "previous_price": 1500, "price_change_pct": 20.0, "image_url": "https://images.pexels.com/photos/2254115/pexels-photo-2254115.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940", "category": "Hockey", "rarity": "Rare", "last_sold": "2024-01-20", "volume_24h": 95, "market_cap": 720000, "volatility_30d": 38.5, "sharpe_ratio": 2.4, "beta": 1.75, "correlation_market": 0.42, "player_status": "active", "hall_of_fame": False, "championships": 0},
 ]
+
+# ============ PLAYER PERFORMANCE ENGINE ============
+import random as _rng
+import hashlib
+
+def _seed_rng(card_id: str, game_idx: int, field: str = ""):
+    """Deterministic random based on card + game index so data is consistent across requests"""
+    seed_str = f"{card_id}_{game_idx}_{field}"
+    return int(hashlib.md5(seed_str.encode()).hexdigest()[:8], 16)
+
+def _det_rand(card_id: str, game_idx: int, field: str, low: float, high: float) -> float:
+    s = _seed_rng(card_id, game_idx, field)
+    return low + (s % 10000) / 10000 * (high - low)
+
+def _det_int(card_id: str, game_idx: int, field: str, low: int, high: int) -> int:
+    return int(_det_rand(card_id, game_idx, field, low, high))
+
+NBA_TEAMS = ["BOS","NYK","MIL","PHI","CLE","ORL","IND","MIA","CHI","ATL","BKN","TOR","DET","WAS","CHA",
+             "DEN","OKC","MIN","LAC","DAL","PHX","SAC","HOU","NOP","LAL","GSW","MEM","SAS","UTA","POR"]
+MLB_TEAMS = ["NYY","LAD","HOU","ATL","TB","BAL","TEX","MIN","SD","PHI","ARI","MIL","CIN","SEA","TOR",
+             "BOS","CLE","SF","STL","CHC","MIA","KC","DET","PIT","COL","WSH","NYM","CWS","LAA","OAK"]
+NFL_TEAMS = ["KC","BUF","BAL","MIA","DAL","SF","DET","PHI","CIN","JAX","CLE","HOU","IND","PIT","LAR",
+             "SEA","MIN","GB","TB","NO","ATL","CAR","CHI","NYG","NYJ","WAS","LV","DEN","LAC","ARI","NE","TEN"]
+NHL_TEAMS = ["EDM","COL","DAL","WPG","VAN","NSH","LAK","VGK","CAR","NYR","FLA","BOS","TOR","TBL","NJD",
+             "OTT","DET","PIT","WSH","PHI","BUF","MTL","NYI","CBJ","MIN","STL","CHI","ARI","SJS","ANA","CGY","SEA"]
+
+PLAYER_BASELINES = {
+    "card_001": {"sport": "nba", "minutes": 0, "ppg": 0, "rpg": 0, "apg": 0},  # Jordan retired
+    "card_002": {"sport": "nba", "minutes": 33, "ppg": 25.2, "rpg": 7.1, "apg": 8.0, "trend": "declining"},
+    "card_003": {"sport": "nba", "minutes": 36, "ppg": 28.8, "rpg": 8.3, "apg": 9.5, "trend": "rising"},
+    "card_004": {"sport": "mlb", "minutes": 0, "ab": 0},  # Mantle deceased
+    "card_005": {"sport": "nfl", "pass_yds": 285, "pass_td": 2.1, "rush_yds": 22, "trend": "declining"},
+    "card_006": {"sport": "nba", "minutes": 30, "ppg": 22.5, "rpg": 5.8, "apg": 4.2, "trend": "inconsistent"},
+    "card_007": {"sport": "mlb", "ab": 4.2, "avg": 0.282, "hr_rate": 0.065, "rbi_rate": 0.22, "trend": "rising"},
+    "card_008": {"sport": "nfl", "pass_yds": 268, "pass_td": 1.9, "rush_yds": 15, "trend": "rising"},
+    "card_009": {"sport": "nba", "minutes": 35, "ppg": 26.3, "rpg": 3.2, "apg": 10.8, "trend": "stable"},
+    "card_010": {"sport": "nba", "minutes": 32, "ppg": 22.8, "rpg": 10.5, "apg": 3.8, "trend": "rising"},
+    "card_011": {"sport": "nhl", "toi": 22.5, "goals_rate": 0.45, "assists_rate": 0.75, "shots": 4.2, "trend": "rising"},
+    "card_012": {"sport": "nhl", "toi": 25.0, "goals_rate": 0.22, "assists_rate": 0.55, "shots": 3.1, "trend": "stable"},
+    "card_013": {"sport": "nhl", "toi": 18.5, "goals_rate": 0.32, "assists_rate": 0.42, "shots": 3.5, "trend": "rising"},
+}
+
+def generate_nba_game(card_id: str, idx: int, baseline: dict, trend_factor: float):
+    teams = [t for t in NBA_TEAMS]
+    opp = teams[_det_int(card_id, idx, "opp", 0, len(teams))]
+    mins = max(10, baseline["minutes"] + _det_rand(card_id, idx, "mins", -8, 8) + trend_factor * 2)
+    min_factor = mins / max(1, baseline["minutes"])
+    pts = max(0, round(baseline["ppg"] * min_factor + _det_rand(card_id, idx, "pts", -10, 10)))
+    reb = max(0, round(baseline["rpg"] * min_factor + _det_rand(card_id, idx, "reb", -4, 4)))
+    ast = max(0, round(baseline["apg"] * min_factor + _det_rand(card_id, idx, "ast", -4, 4)))
+    stl = max(0, _det_int(card_id, idx, "stl", 0, 4))
+    blk = max(0, _det_int(card_id, idx, "blk", 0, 3))
+    fg_pct = max(20, min(75, 45 + _det_rand(card_id, idx, "fg", -15, 15)))
+    three_pct = max(10, min(65, 35 + _det_rand(card_id, idx, "3p", -20, 20)))
+    won = _det_rand(card_id, idx, "win", 0, 1) > 0.45
+    # Impact score: big game = high pts + efficiency + minutes
+    impact = ((pts - baseline["ppg"]) / max(1, baseline["ppg"])) * 40 + ((mins - baseline["minutes"]) / max(1, baseline["minutes"])) * 20 + (10 if won else -5)
+    return {
+        "sport": "NBA", "opponent": opp, "minutes": round(mins, 1),
+        "points": pts, "rebounds": reb, "assists": ast, "steals": stl, "blocks": blk,
+        "fg_pct": round(fg_pct, 1), "three_pt_pct": round(three_pct, 1),
+        "result": "W" if won else "L", "impact_score": round(max(-100, min(100, impact)), 1),
+    }
+
+def generate_mlb_game(card_id: str, idx: int, baseline: dict, trend_factor: float):
+    teams = [t for t in MLB_TEAMS]
+    opp = teams[_det_int(card_id, idx, "opp", 0, len(teams))]
+    ab = max(2, round(baseline["ab"] + _det_rand(card_id, idx, "ab", -1, 1)))
+    avg_adj = baseline["avg"] + trend_factor * 0.01
+    hits = sum(1 for j in range(ab) if _det_rand(card_id, idx, f"hit{j}", 0, 1) < avg_adj)
+    hr = sum(1 for j in range(ab) if _det_rand(card_id, idx, f"hr{j}", 0, 1) < baseline["hr_rate"] * (1 + trend_factor * 0.1))
+    rbi = max(hr, round(ab * baseline["rbi_rate"] + _det_rand(card_id, idx, "rbi", -1, 2)))
+    runs = max(0, _det_int(card_id, idx, "runs", 0, 3))
+    sb = 1 if _det_rand(card_id, idx, "sb", 0, 1) > 0.85 else 0
+    won = _det_rand(card_id, idx, "win", 0, 1) > 0.48
+    impact = ((hits / max(1, ab) - baseline["avg"]) / max(0.01, baseline["avg"])) * 30 + hr * 25 + rbi * 8
+    return {
+        "sport": "MLB", "opponent": opp, "at_bats": ab, "hits": hits,
+        "home_runs": hr, "rbi": rbi, "runs": runs, "stolen_bases": sb,
+        "batting_avg": round(hits / max(1, ab), 3),
+        "result": "W" if won else "L", "impact_score": round(max(-100, min(100, impact)), 1),
+    }
+
+def generate_nfl_game(card_id: str, idx: int, baseline: dict, trend_factor: float):
+    teams = [t for t in NFL_TEAMS]
+    opp = teams[_det_int(card_id, idx, "opp", 0, len(teams))]
+    pass_yds = max(100, round(baseline["pass_yds"] + _det_rand(card_id, idx, "pyds", -80, 80) + trend_factor * 20))
+    pass_td = max(0, round(baseline["pass_td"] + _det_rand(card_id, idx, "ptd", -1.5, 1.5)))
+    rush_yds = max(0, round(baseline["rush_yds"] + _det_rand(card_id, idx, "ryds", -15, 25)))
+    ints = max(0, _det_int(card_id, idx, "int", 0, 3))
+    comp_pct = max(50, min(80, 65 + _det_rand(card_id, idx, "cmp", -12, 12)))
+    passer_rating = max(50, min(158, 90 + _det_rand(card_id, idx, "pr", -30, 40)))
+    won = _det_rand(card_id, idx, "win", 0, 1) > 0.48
+    impact = ((pass_yds - baseline["pass_yds"]) / max(1, baseline["pass_yds"])) * 25 + pass_td * 15 - ints * 20
+    return {
+        "sport": "NFL", "opponent": opp, "passing_yards": pass_yds,
+        "passing_tds": pass_td, "interceptions": ints, "rushing_yards": rush_yds,
+        "completion_pct": round(comp_pct, 1), "passer_rating": round(passer_rating, 1),
+        "result": "W" if won else "L", "impact_score": round(max(-100, min(100, impact)), 1),
+    }
+
+def generate_nhl_game(card_id: str, idx: int, baseline: dict, trend_factor: float):
+    teams = [t for t in NHL_TEAMS]
+    opp = teams[_det_int(card_id, idx, "opp", 0, len(teams))]
+    toi = max(12, round(baseline["toi"] + _det_rand(card_id, idx, "toi", -4, 4) + trend_factor * 1.5, 1))
+    goals = 1 if _det_rand(card_id, idx, "goal", 0, 1) < baseline["goals_rate"] * (1 + trend_factor * 0.15) else 0
+    if _det_rand(card_id, idx, "goal2", 0, 1) < baseline["goals_rate"] * 0.3:
+        goals += 1  # Multi-goal game chance
+    assists = 1 if _det_rand(card_id, idx, "ast", 0, 1) < baseline["assists_rate"] * (1 + trend_factor * 0.1) else 0
+    if _det_rand(card_id, idx, "ast2", 0, 1) < baseline["assists_rate"] * 0.25:
+        assists += 1
+    shots = max(1, round(baseline["shots"] + _det_rand(card_id, idx, "shots", -2, 2)))
+    plus_minus = _det_int(card_id, idx, "pm", -3, 3)
+    hits_game = _det_int(card_id, idx, "hits", 0, 5)
+    won = _det_rand(card_id, idx, "win", 0, 1) > 0.47
+    impact = goals * 30 + assists * 15 + ((toi - baseline["toi"]) / max(1, baseline["toi"])) * 20 + plus_minus * 5
+    return {
+        "sport": "NHL", "opponent": opp, "ice_time": f"{int(toi)}:{int((toi % 1) * 60):02d}",
+        "goals": goals, "assists": assists, "points": goals + assists,
+        "shots": shots, "plus_minus": plus_minus, "hits": hits_game,
+        "result": "W" if won else "L", "impact_score": round(max(-100, min(100, impact)), 1),
+    }
+
+def generate_player_performance(card_id: str) -> dict:
+    card = next((c for c in MOCK_CARDS if c["id"] == card_id), None)
+    if not card:
+        return None
+    baseline = PLAYER_BASELINES.get(card_id)
+    if not baseline:
+        return None
+
+    sport = baseline["sport"]
+    status = card.get("player_status", "active")
+    
+    # Retired/deceased players don't have current game data
+    if status in ["retired", "deceased"]:
+        return {
+            "card_id": card_id, "player_name": card["player_name"], "team": card["team"],
+            "sport": sport.upper(), "category": card["category"], "status": status,
+            "has_current_data": False,
+            "legacy_note": f"{card['player_name']} is {'retired' if status == 'retired' else 'no longer active'}. Card value driven by legacy, scarcity, and collector demand.",
+            "career_highlights": {"championships": card.get("championships", 0), "hall_of_fame": card.get("hall_of_fame", False)},
+            "performance_impact_on_value": "minimal",
+            "game_log": [], "trends": {}, "streak": None,
+        }
+
+    trend = baseline.get("trend", "stable")
+    trend_map = {"rising": 1.0, "declining": -1.0, "stable": 0.0, "inconsistent": 0.0}
+    trend_base = trend_map.get(trend, 0.0)
+
+    # Generate 20 game logs with progressive trend
+    games = []
+    today = datetime.now(timezone.utc)
+    gen_fn = {"nba": generate_nba_game, "mlb": generate_mlb_game, "nfl": generate_nfl_game, "nhl": generate_nhl_game}[sport]
+    
+    for i in range(20):
+        # Trend increases as games get more recent
+        game_trend = trend_base * (0.3 + (i / 20) * 0.7)
+        # Add some randomness for "inconsistent"
+        if trend == "inconsistent":
+            game_trend = 0.8 if i % 3 == 0 else -0.6
+        
+        game = gen_fn(card_id, i, baseline, game_trend)
+        game_date = today - timedelta(days=(19 - i) * (2 if sport in ["nba", "nhl"] else 1 if sport == "mlb" else 7))
+        game["date"] = game_date.strftime("%Y-%m-%d")
+        game["game_number"] = i + 1
+        games.append(game)
+
+    # Calculate trends
+    first_half = games[:10]
+    second_half = games[10:]
+    
+    def avg_field(game_list, field):
+        vals = [g.get(field, 0) for g in game_list if g.get(field) is not None]
+        return sum(vals) / max(1, len(vals))
+    
+    trends = {}
+    if sport == "nba":
+        trends = {
+            "minutes": {"first_10": round(avg_field(first_half, "minutes"), 1), "last_10": round(avg_field(second_half, "minutes"), 1)},
+            "scoring": {"first_10": round(avg_field(first_half, "points"), 1), "last_10": round(avg_field(second_half, "points"), 1)},
+            "rebounds": {"first_10": round(avg_field(first_half, "rebounds"), 1), "last_10": round(avg_field(second_half, "rebounds"), 1)},
+            "assists": {"first_10": round(avg_field(first_half, "assists"), 1), "last_10": round(avg_field(second_half, "assists"), 1)},
+            "efficiency": {"first_10": round(avg_field(first_half, "fg_pct"), 1), "last_10": round(avg_field(second_half, "fg_pct"), 1)},
+        }
+    elif sport == "mlb":
+        trends = {
+            "batting_avg": {"first_10": round(avg_field(first_half, "batting_avg"), 3), "last_10": round(avg_field(second_half, "batting_avg"), 3)},
+            "home_runs": {"first_10": round(avg_field(first_half, "home_runs"), 2), "last_10": round(avg_field(second_half, "home_runs"), 2)},
+            "rbi": {"first_10": round(avg_field(first_half, "rbi"), 1), "last_10": round(avg_field(second_half, "rbi"), 1)},
+        }
+    elif sport == "nfl":
+        trends = {
+            "passing_yards": {"first_10": round(avg_field(first_half, "passing_yards"), 0), "last_10": round(avg_field(second_half, "passing_yards"), 0)},
+            "passing_tds": {"first_10": round(avg_field(first_half, "passing_tds"), 1), "last_10": round(avg_field(second_half, "passing_tds"), 1)},
+            "passer_rating": {"first_10": round(avg_field(first_half, "passer_rating"), 1), "last_10": round(avg_field(second_half, "passer_rating"), 1)},
+        }
+    elif sport == "nhl":
+        trends = {
+            "goals": {"first_10": round(avg_field(first_half, "goals"), 2), "last_10": round(avg_field(second_half, "goals"), 2)},
+            "assists": {"first_10": round(avg_field(first_half, "assists"), 2), "last_10": round(avg_field(second_half, "assists"), 2)},
+            "points": {"first_10": round(avg_field(first_half, "points"), 2), "last_10": round(avg_field(second_half, "points"), 2)},
+            "shots": {"first_10": round(avg_field(first_half, "shots"), 1), "last_10": round(avg_field(second_half, "shots"), 1)},
+        }
+
+    # Add direction to each trend
+    for key in trends:
+        f10 = trends[key]["first_10"]
+        l10 = trends[key]["last_10"]
+        if f10 == 0:
+            pct_change = 0
+        else:
+            pct_change = round(((l10 - f10) / abs(f10)) * 100, 1)
+        trends[key]["change_pct"] = pct_change
+        trends[key]["direction"] = "up" if pct_change > 3 else ("down" if pct_change < -3 else "flat")
+
+    # Streak detection
+    last_5 = games[-5:]
+    last_5_impact = [g["impact_score"] for g in last_5]
+    avg_impact = sum(last_5_impact) / 5
+    hot_games = sum(1 for x in last_5_impact if x > 15)
+    cold_games = sum(1 for x in last_5_impact if x < -15)
+    
+    if hot_games >= 3:
+        streak = {"type": "hot", "games": hot_games, "label": f"{hot_games}-game hot streak", "description": "Performing significantly above average recently"}
+    elif cold_games >= 3:
+        streak = {"type": "cold", "games": cold_games, "label": f"{cold_games}-game cold streak", "description": "Underperforming compared to season averages"}
+    else:
+        streak = {"type": "neutral", "games": 0, "label": "Consistent", "description": "Playing near expected levels"}
+
+    # Performance Impact on Card Value
+    impact_score = avg_impact
+    for key in trends:
+        d = trends[key].get("direction", "flat")
+        if d == "up":
+            impact_score += 5
+        elif d == "down":
+            impact_score -= 5
+
+    if impact_score > 15:
+        performance_impact = "strongly_bullish"
+        impact_label = "Performance is driving card value UP"
+    elif impact_score > 5:
+        performance_impact = "bullish"
+        impact_label = "Positive on-field trends support value"
+    elif impact_score < -15:
+        performance_impact = "strongly_bearish"
+        impact_label = "Declining performance is hurting card value"
+    elif impact_score < -5:
+        performance_impact = "bearish"
+        impact_label = "On-field concerns may pressure value"
+    else:
+        performance_impact = "neutral"
+        impact_label = "Performance has minimal impact currently"
+
+    # Season averages
+    season_avgs = {}
+    for field in games[0]:
+        if isinstance(games[0][field], (int, float)) and field not in ["game_number", "impact_score"]:
+            vals = [g[field] for g in games]
+            season_avgs[field] = round(sum(vals) / len(vals), 2)
+
+    return {
+        "card_id": card_id, "player_name": card["player_name"], "team": card["team"],
+        "sport": sport.upper(), "category": card["category"], "status": status,
+        "has_current_data": True,
+        "season_averages": season_avgs,
+        "game_log": games,
+        "trends": trends,
+        "streak": streak,
+        "performance_impact": performance_impact,
+        "performance_impact_label": impact_label,
+        "performance_impact_score": round(impact_score, 1),
+        "trend_direction": trend,
+    }
+
+@api_router.get("/players/{card_id}/performance")
+async def get_player_performance(card_id: str):
+    result = generate_player_performance(card_id)
+    if not result:
+        raise HTTPException(status_code=404, detail="Card not found or no performance data")
+    return result
+
+@api_router.get("/players/performance/all")
+async def get_all_player_performance():
+    """Get performance summaries for all active players"""
+    results = []
+    for card in MOCK_CARDS:
+        perf = generate_player_performance(card["id"])
+        if perf and perf.get("has_current_data"):
+            results.append({
+                "card_id": perf["card_id"],
+                "player_name": perf["player_name"],
+                "team": perf["team"],
+                "sport": perf["sport"],
+                "streak": perf["streak"],
+                "performance_impact": perf["performance_impact"],
+                "performance_impact_label": perf["performance_impact_label"],
+                "performance_impact_score": perf["performance_impact_score"],
+                "trend_direction": perf["trend_direction"],
+                "trends": perf["trends"],
+            })
+    return results
 
 # ============ AUTH ROUTES ============
 
@@ -478,7 +785,7 @@ async def buy_from_marketplace(request: BuyCardRequest, current_user: dict = Dep
 # ============ MARKET VALUATION ============
 
 def calculate_market_value(card: dict) -> dict:
-    """Calculate AI market value based on card attributes - simulates real market analysis"""
+    """Calculate AI market value based on card attributes + live player performance"""
     base = card["current_price"]
     # Factor in rarity multiplier
     rarity_mult = {"Legendary": 1.12, "Ultra Rare": 1.08, "Rare": 1.05, "Common": 1.02}
@@ -501,7 +808,27 @@ def calculate_market_value(card: dict) -> dict:
     # Factor in momentum (volume + price trend)
     momentum = 1.0 + (card["price_change_pct"] / 200)  # Slight adjust for momentum
     
-    fair_market_value = base * mult * grade_mult * status_mult * momentum
+    # Factor in LIVE PLAYER PERFORMANCE
+    perf_mult = 1.0
+    perf_note = None
+    if card.get("player_status") == "active":
+        perf = generate_player_performance(card["id"])
+        if perf and perf.get("has_current_data"):
+            impact = perf["performance_impact"]
+            if impact == "strongly_bullish":
+                perf_mult = 1.08
+                perf_note = f"Hot performance: {perf['streak']['label'] if perf['streak']['type'] == 'hot' else 'Strong trends'}"
+            elif impact == "bullish":
+                perf_mult = 1.04
+                perf_note = "Positive on-field trends"
+            elif impact == "strongly_bearish":
+                perf_mult = 0.92
+                perf_note = f"Declining stats: {perf['streak']['label'] if perf['streak']['type'] == 'cold' else 'Negative trends'}"
+            elif impact == "bearish":
+                perf_mult = 0.96
+                perf_note = "On-field concerns"
+    
+    fair_market_value = base * mult * grade_mult * status_mult * momentum * perf_mult
     
     # Confidence based on volume
     confidence = min(0.95, 0.60 + (card["volume_24h"] / 500))
@@ -514,7 +841,7 @@ def calculate_market_value(card: dict) -> dict:
     sell_low = round(fair_market_value * 0.95, 2)
     sell_high = round(fair_market_value * 1.05, 2)
     
-    return {
+    result = {
         "card_id": card["id"],
         "card_name": card["name"],
         "current_price": card["current_price"],
@@ -531,7 +858,10 @@ def calculate_market_value(card: dict) -> dict:
         "rarity": card["rarity"],
         "volume_24h": card["volume_24h"],
         "momentum": "Bullish" if card["price_change_pct"] > 3 else ("Bearish" if card["price_change_pct"] < -3 else "Neutral"),
+        "performance_factor": perf_mult,
+        "performance_note": perf_note,
     }
+    return result
 
 @api_router.get("/marketplace/valuations")
 async def get_market_valuations(category: Optional[str] = None):
@@ -681,11 +1011,38 @@ async def get_transactions(current_user: dict = Depends(get_current_user)):
 @api_router.get("/predictions", response_model=List[AIPrediction])
 async def get_all_predictions():
     predictions = []
-    for card in MOCK_CARDS[:6]:
-        signal = random.choice(["STRONG BUY", "BUY", "HOLD", "SELL"])
+    for card in MOCK_CARDS:
+        # Factor player performance into the signal
+        perf = generate_player_performance(card["id"])
+        perf_impact = perf.get("performance_impact", "neutral") if perf and perf.get("has_current_data") else "neutral"
+        
+        # Generate signal based on card metrics + performance
+        if perf_impact == "strongly_bullish":
+            signal = random.choice(["STRONG BUY", "BUY"])
+        elif perf_impact == "bullish":
+            signal = random.choice(["BUY", "BUY", "HOLD"])
+        elif perf_impact == "strongly_bearish":
+            signal = random.choice(["SELL", "SELL", "HOLD"])
+        elif perf_impact == "bearish":
+            signal = random.choice(["SELL", "HOLD", "HOLD"])
+        elif card.get("player_status") in ["retired", "deceased"]:
+            signal = random.choice(["HOLD", "HOLD", "BUY"])
+        else:
+            signal = random.choice(["STRONG BUY", "BUY", "HOLD", "SELL"])
+        
         confidence = random.uniform(0.65, 0.95)
         risk = random.uniform(0.2, 0.8)
         sentiment = random.uniform(-0.5, 0.8)
+        
+        factors = ["eBay price momentum", "Market volume trends", "Social sentiment analysis"]
+        if perf and perf.get("has_current_data"):
+            factors.append(f"Player stats: {perf.get('trend_direction', 'stable')}")
+            if perf.get("streak", {}).get("type") == "hot":
+                factors.append(f"Hot streak: {perf['streak']['label']}")
+            elif perf.get("streak", {}).get("type") == "cold":
+                factors.append(f"Cold streak: {perf['streak']['label']}")
+        else:
+            factors.append("Legacy/scarcity premium")
         
         pred = AIPrediction(
             id=str(uuid.uuid4()),
@@ -697,8 +1054,8 @@ async def get_all_predictions():
             confidence_score=round(confidence, 2),
             risk_score=round(risk, 2),
             sentiment_score=round(sentiment, 2),
-            analysis=f"Based on market trends, player performance, and social sentiment analysis, {card['player_name']} cards show {signal.lower()} signals.",
-            factors=["eBay price momentum", "Player stats trending", "Social sentiment positive", "Market volume increasing"],
+            analysis=f"Based on market trends, {'live player performance data, ' if perf and perf.get('has_current_data') else ''}and social sentiment analysis, {card['player_name']} cards show {signal.lower()} signals. {'Performance trending ' + perf.get('trend_direction', '') + '. ' if perf and perf.get('has_current_data') else 'Value driven by legacy and scarcity. '}{card.get('category', '')} market {'showing strength' if card['price_change_pct'] > 0 else 'under pressure'}.",
+            factors=factors,
             generated_at=datetime.now(timezone.utc).isoformat()
         )
         predictions.append(pred)

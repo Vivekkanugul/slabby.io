@@ -74,4 +74,8 @@ export const updateWatchlistItem = (itemId, data) => api.put(`/watchlist/${itemI
 export const removeFromWatchlist = (itemId) => api.delete(`/watchlist/${itemId}`);
 export const getWatchlistAlerts = () => api.get('/watchlist/alerts');
 
+// ============ PLAYER PERFORMANCE ============
+export const getPlayerPerformance = (cardId) => api.get(`/players/${cardId}/performance`);
+export const getAllPlayerPerformance = () => api.get('/players/performance/all');
+
 export default api;
