@@ -14,6 +14,7 @@ import jwt
 import bcrypt
 import random
 import math
+import httpx
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
@@ -27,6 +28,10 @@ db = client[os.environ['DB_NAME']]
 JWT_SECRET = os.environ.get('JWT_SECRET', 'fallback_secret')
 JWT_ALGORITHM = "HS256"
 JWT_EXPIRATION_HOURS = 24
+
+# CardSight API Config
+CARDSIGHT_API_KEY = os.environ.get('CARDSIGHT_API_KEY', '')
+CARDSIGHT_BASE_URL = "https://api.cardsight.ai/v1"
 
 security = HTTPBearer()
 
@@ -826,6 +831,151 @@ async def get_me(current_user: dict = Depends(get_current_user)):
     return UserResponse(**current_user)
 
 # ============ CARDS ROUTES ============
+
+# CardSight API integration for searching real cards
+async def search_cardsight(query: str, limit: int = 20, sport: Optional[str] = None) -> List[Dict]:
+    """Search CardSight API for real card data"""
+    if not CARDSIGHT_API_KEY:
+        logger.warning("CardSight API key not configured")
+        return []
+    
+    try:
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            params = {"q": query, "limit": limit}
+            if sport:
+                params["sport"] = sport.lower()
+            
+            response = await client.get(
+                f"{CARDSIGHT_BASE_URL}/catalog/search",
+                params=params,
+                headers={"x-api-key": CARDSIGHT_API_KEY}
+            )
+            
+            if response.status_code == 200:
+                data = response.json()
+                return data.get("results", [])
+            else:
+                logger.error(f"CardSight API error: {response.status_code}")
+                return []
+    except Exception as e:
+        logger.error(f"CardSight API request failed: {e}")
+        return []
+
+def cardsight_to_cardbase(cs_card: Dict, index: int = 0) -> Dict:
+    """Convert CardSight API response to our CardBase format with simulated pricing"""
+    # Generate deterministic but varied pricing based on card characteristics
+    card_id = cs_card.get("id", str(uuid.uuid4()))
+    name = cs_card.get("name", "Unknown Card")
+    year_str = cs_card.get("year", "2023-24")
+    year = int(year_str.split("-")[0]) if "-" in year_str else int(year_str[:4]) if year_str else 2023
+    set_name = cs_card.get("setName", "Base Set")
+    release_name = cs_card.get("releaseName", "Unknown")
+    manufacturer = cs_card.get("manufacturerName", "Unknown")
+    
+    # Determine category/sport from release name or set name
+    category = "Basketball"  # Default
+    hockey_keywords = ["upper deck", "o-pee-chee", "young guns", "sp game used", "the cup"]
+    baseball_keywords = ["topps", "bowman", "panini diamond", "donruss diamond"]
+    football_keywords = ["score", "playoff", "contenders nfl"]
+    
+    lower_release = release_name.lower()
+    lower_set = set_name.lower()
+    
+    if any(kw in lower_release or kw in lower_set for kw in hockey_keywords):
+        category = "Hockey"
+    elif any(kw in lower_release or kw in lower_set for kw in baseball_keywords):
+        category = "Baseball"
+    elif any(kw in lower_release or kw in lower_set for kw in football_keywords):
+        category = "Football"
+    
+    # Generate semi-realistic pricing based on card attributes
+    import hashlib
+    seed = int(hashlib.md5(card_id.encode()).hexdigest()[:8], 16)
+    random.seed(seed)
+    
+    # Base price factors
+    age_factor = max(0.5, 1 + (2024 - year) * 0.05)  # Older cards tend to be worth more
+    rarity_score = random.uniform(0.8, 1.5)
+    
+    # Price ranges by manufacturer prestige
+    if "panini" in manufacturer.lower():
+        base_price = random.uniform(50, 5000) * rarity_score * age_factor
+    elif "topps" in manufacturer.lower():
+        base_price = random.uniform(30, 3000) * rarity_score * age_factor
+    elif "upper deck" in manufacturer.lower():
+        base_price = random.uniform(40, 4000) * rarity_score * age_factor
+    else:
+        base_price = random.uniform(20, 1000) * rarity_score * age_factor
+    
+    current_price = round(base_price, 2)
+    price_change = random.uniform(-15, 25)
+    previous_price = round(current_price / (1 + price_change / 100), 2)
+    
+    # Simulate grade distribution
+    grades = ["PSA 10", "PSA 9", "BGS 9.5", "PSA 8", "BGS 10"]
+    grade = random.choices(grades, weights=[10, 25, 15, 30, 5])[0]
+    
+    # Rarity based on set
+    rarities = ["Common", "Rare", "Ultra Rare", "Legendary"]
+    if "prizm" in lower_set or "chrome" in lower_set:
+        rarity = random.choices(rarities, weights=[40, 35, 20, 5])[0]
+    elif "national treasures" in lower_set or "flawless" in lower_set:
+        rarity = random.choices(rarities, weights=[5, 20, 45, 30])[0]
+    else:
+        rarity = random.choices(rarities, weights=[50, 30, 15, 5])[0]
+    
+    # Generate other metrics
+    volatility = round(random.uniform(10, 45), 1)
+    sharpe = round(random.uniform(0.3, 2.5), 2)
+    beta = round(random.uniform(0.5, 1.8), 2)
+    
+    return {
+        "id": f"cs_{card_id}",  # Prefix to distinguish from mock cards
+        "name": f"{year_str} {release_name} {name}",
+        "player_name": name,
+        "team": "TBD",  # CardSight doesn't provide team info
+        "year": year,
+        "set_name": set_name,
+        "grade": grade,
+        "current_price": current_price,
+        "previous_price": previous_price,
+        "price_change_pct": round(price_change, 2),
+        "image_url": f"https://images.pexels.com/photos/{7800000 + (seed % 10000)}/pexels-photo.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940",
+        "category": category,
+        "rarity": rarity,
+        "last_sold": (datetime.now(timezone.utc) - timedelta(days=random.randint(1, 30))).strftime("%Y-%m-%d"),
+        "volume_24h": random.randint(5, 200),
+        "market_cap": round(current_price * random.randint(100, 5000), 2),
+        "volatility_30d": volatility,
+        "sharpe_ratio": sharpe,
+        "beta": beta,
+        "correlation_market": round(random.uniform(0.3, 0.8), 2),
+        "player_status": "active",
+        "hall_of_fame": False,
+        "championships": 0,
+        "source": "cardsight",  # Mark as from CardSight API
+        "cardsight_id": card_id,
+        "manufacturer": manufacturer,
+        "release_name": release_name,
+    }
+
+@api_router.get("/cards/search/cardsight")
+async def search_cards_cardsight(q: str, limit: int = 20, sport: Optional[str] = None):
+    """Search real cards from CardSight API"""
+    if not q or len(q) < 2:
+        raise HTTPException(status_code=400, detail="Search query must be at least 2 characters")
+    
+    results = await search_cardsight(q, limit, sport)
+    
+    # Convert to our card format
+    cards = [cardsight_to_cardbase(r, i) for i, r in enumerate(results)]
+    
+    return {
+        "query": q,
+        "total": len(cards),
+        "source": "cardsight",
+        "cards": cards
+    }
 
 @api_router.get("/cards", response_model=List[CardBase])
 async def get_cards(category: Optional[str] = None, search: Optional[str] = None, sort_by: Optional[str] = "current_price", order: Optional[str] = "desc"):

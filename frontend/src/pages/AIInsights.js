@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
-import { getPredictions, getCards, getCardValuation, getPlayerPerformance, getHoldProjection } from '../lib/api';
+import { getPredictions, getCards, getCardValuation, getPlayerPerformance, getHoldProjection, searchCardsight } from '../lib/api';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Progress } from '../components/ui/progress';
@@ -9,7 +9,7 @@ import {
   Sparkles, TrendingUp, TrendingDown, Loader2, Activity,
   Target, BarChart3, LineChart, Zap, AlertTriangle, Shield,
   DollarSign, Users, FileText, Layers, Gauge, ArrowUpRight,
-  ArrowDownRight, Minus, Clock, Hash, Box, Timer, Search
+  ArrowDownRight, Minus, Clock, Hash, Box, Timer, Search, Globe
 } from 'lucide-react';
 import { formatCurrency, formatPercent, getPriceChangeColor } from '../lib/utils';
 import {
@@ -1070,8 +1070,12 @@ function genRadarData(selectedCard) {
 function PlayerSearch({ predictions, selectedCard, onSelect }) {
   const [query, setQuery] = useState('');
   const [focused, setFocused] = useState(false);
+  const [cardsightResults, setCardsightResults] = useState([]);
+  const [cardsightLoading, setCardsightLoading] = useState(false);
+  const [searchMode, setSearchMode] = useState('all'); // 'all', 'local', 'cardsight'
 
-  const filtered = query.trim()
+  // Local filtering
+  const localFiltered = query.trim()
     ? predictions.filter(p => {
         const q = query.toLowerCase();
         return p.card?.player_name?.toLowerCase().includes(q) ||
@@ -1080,7 +1084,57 @@ function PlayerSearch({ predictions, selectedCard, onSelect }) {
       })
     : [];
 
+  // CardSight API search with debounce
+  useEffect(() => {
+    if (query.trim().length < 2) {
+      setCardsightResults([]);
+      return;
+    }
+    
+    const timer = setTimeout(async () => {
+      setCardsightLoading(true);
+      try {
+        const response = await searchCardsight(query.trim(), 15);
+        setCardsightResults(response.data?.cards || []);
+      } catch (err) {
+        console.error('CardSight search failed:', err);
+        setCardsightResults([]);
+      } finally {
+        setCardsightLoading(false);
+      }
+    }, 400); // Debounce 400ms
+
+    return () => clearTimeout(timer);
+  }, [query]);
+
   const showResults = query.trim().length > 0;
+  
+  // Convert CardSight card to prediction-like format for display
+  const convertCardsightToPrediction = (card) => ({
+    id: card.id,
+    card_id: card.id,
+    card: card,
+    signal: card.price_change_pct > 5 ? 'STRONG BUY' : card.price_change_pct > 0 ? 'BUY' : card.price_change_pct < -5 ? 'SELL' : 'HOLD',
+    confidence_score: Math.random() * 30 + 70,
+    risk_score: Math.random() * 50 + 25,
+    fromCardsight: true,
+    // Generate analytics for CardSight cards
+    technicals: genTechnicals(card),
+    priceTargets: genPriceTargets(card),
+    comparables: genComparables(card, []),
+    fundamentals: genFundamentals(card),
+    riskProfile: genRiskProfile(card),
+    marketIntel: genMarketIntel(card),
+  });
+
+  const handleSelect = (item, isCardsight = false) => {
+    if (isCardsight) {
+      onSelect(convertCardsightToPrediction(item));
+    } else {
+      onSelect(item);
+    }
+    setQuery('');
+  };
 
   return (
     <div className="bg-[#0A0A0C] border border-white/10 rounded-xl p-3 sticky top-20">
@@ -1094,7 +1148,7 @@ function PlayerSearch({ predictions, selectedCard, onSelect }) {
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           onFocus={() => setFocused(true)}
-          placeholder="Search player or team..."
+          placeholder="Search any player, card..."
           className="w-full pl-8 pr-3 py-2 bg-white/5 border border-white/10 rounded-lg text-xs text-white placeholder:text-zinc-600 focus:outline-none focus:border-[#007AFF]/50"
           data-testid="research-search-input"
         />
@@ -1108,7 +1162,10 @@ function PlayerSearch({ predictions, selectedCard, onSelect }) {
       {/* Selected card always shows */}
       {selectedCard && (
         <div className="mb-2">
-          <span className="text-[9px] text-zinc-600 uppercase tracking-wider">Active</span>
+          <span className="text-[9px] text-zinc-600 uppercase tracking-wider flex items-center gap-1">
+            Active
+            {selectedCard.fromCardsight && <Globe className="w-2.5 h-2.5 text-cyan-400" />}
+          </span>
           <button
             className="w-full p-2.5 rounded-lg text-left bg-[#007AFF]/20 border border-[#007AFF]/40 mt-1"
             data-testid={`research-card-${selectedCard.card_id}`}
@@ -1129,38 +1186,91 @@ function PlayerSearch({ predictions, selectedCard, onSelect }) {
 
       {/* Search results */}
       {showResults && (
-        <div className="space-y-1">
-          <span className="text-[9px] text-zinc-600 uppercase tracking-wider">{filtered.length} result{filtered.length !== 1 ? 's' : ''}</span>
-          {filtered.length === 0 && (
-            <p className="text-[10px] text-zinc-500 py-3 text-center">No players found</p>
+        <div className="space-y-2 max-h-[60vh] overflow-y-auto custom-scrollbar">
+          {/* Local Results Section */}
+          {localFiltered.length > 0 && (
+            <div className="space-y-1">
+              <span className="text-[9px] text-zinc-600 uppercase tracking-wider">Portfolio Cards ({localFiltered.length})</span>
+              {localFiltered.slice(0, 5).map((pred) => (
+                <button
+                  key={pred.id}
+                  onClick={() => handleSelect(pred, false)}
+                  data-testid={`search-result-${pred.card_id}`}
+                  className={`w-full p-2.5 rounded-lg text-left transition-all ${
+                    selectedCard?.id === pred.id
+                      ? 'bg-[#007AFF]/10 border border-[#007AFF]/30'
+                      : 'bg-white/[0.03] hover:bg-white/[0.06] border border-transparent'
+                  }`}
+                >
+                  <div className="flex items-center justify-between mb-0.5">
+                    <span className="text-xs text-white font-medium truncate flex-1">{pred.card?.player_name}</span>
+                    <SignalBadge signal={pred.signal} />
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] text-zinc-500">{pred.card?.category}</span>
+                    <span className="text-[10px] font-mono text-zinc-400">{formatCurrency(pred.card?.current_price, true)}</span>
+                  </div>
+                </button>
+              ))}
+            </div>
           )}
-          {filtered.map((pred) => (
-            <button
-              key={pred.id}
-              onClick={() => { onSelect(pred); setQuery(''); }}
-              data-testid={`search-result-${pred.card_id}`}
-              className={`w-full p-2.5 rounded-lg text-left transition-all ${
-                selectedCard?.id === pred.id
-                  ? 'bg-[#007AFF]/10 border border-[#007AFF]/30'
-                  : 'bg-white/[0.03] hover:bg-white/[0.06] border border-transparent'
-              }`}
-            >
-              <div className="flex items-center justify-between mb-0.5">
-                <span className="text-xs text-white font-medium truncate flex-1">{pred.card?.player_name}</span>
-                <SignalBadge signal={pred.signal} />
+
+          {/* CardSight Results Section */}
+          <div className="space-y-1">
+            <div className="flex items-center gap-1.5">
+              <Globe className="w-3 h-3 text-cyan-400" />
+              <span className="text-[9px] text-cyan-400 uppercase tracking-wider">
+                CardSight Database
+                {cardsightLoading && <Loader2 className="w-2.5 h-2.5 animate-spin inline ml-1" />}
+              </span>
+            </div>
+            
+            {cardsightLoading ? (
+              <div className="py-4 text-center">
+                <Loader2 className="w-4 h-4 animate-spin text-cyan-400 mx-auto" />
+                <p className="text-[10px] text-zinc-500 mt-1">Searching 7M+ cards...</p>
               </div>
-              <div className="flex items-center justify-between">
-                <span className="text-[10px] text-zinc-500">{pred.card?.category}</span>
-                <span className="text-[10px] font-mono text-zinc-400">{formatCurrency(pred.card?.current_price, true)}</span>
-              </div>
-            </button>
-          ))}
+            ) : cardsightResults.length > 0 ? (
+              cardsightResults.map((card) => (
+                <button
+                  key={card.id}
+                  onClick={() => handleSelect(card, true)}
+                  data-testid={`cardsight-result-${card.id}`}
+                  className="w-full p-2.5 rounded-lg text-left transition-all bg-cyan-950/20 hover:bg-cyan-950/40 border border-cyan-500/20"
+                >
+                  <div className="flex items-center justify-between mb-0.5">
+                    <span className="text-xs text-white font-medium truncate flex-1">{card.player_name}</span>
+                    <span className={`text-[9px] font-mono ${getPriceChangeColor(card.price_change_pct)}`}>
+                      {formatPercent(card.price_change_pct)}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] text-zinc-500 truncate flex-1">{card.set_name}</span>
+                    <span className="text-[10px] font-mono text-cyan-400">{formatCurrency(card.current_price, true)}</span>
+                  </div>
+                  <div className="flex items-center gap-2 mt-1">
+                    <span className="text-[9px] text-zinc-600">{card.year}</span>
+                    <span className="text-[9px] text-zinc-600">{card.grade}</span>
+                    <span className="text-[9px] px-1 py-0.5 rounded bg-cyan-500/10 text-cyan-400">{card.category}</span>
+                  </div>
+                </button>
+              ))
+            ) : query.length >= 2 ? (
+              <p className="text-[10px] text-zinc-500 py-3 text-center">No cards found in CardSight</p>
+            ) : (
+              <p className="text-[10px] text-zinc-500 py-2 text-center">Type 2+ characters to search</p>
+            )}
+          </div>
         </div>
       )}
 
       {/* Empty state when no search */}
       {!showResults && !selectedCard && (
-        <p className="text-[10px] text-zinc-500 text-center py-4">Type a player name to begin</p>
+        <div className="text-center py-4">
+          <Globe className="w-6 h-6 text-cyan-500/50 mx-auto mb-2" />
+          <p className="text-[10px] text-zinc-500">Search 7M+ real cards</p>
+          <p className="text-[9px] text-zinc-600 mt-1">Powered by CardSight AI</p>
+        </div>
       )}
     </div>
   );

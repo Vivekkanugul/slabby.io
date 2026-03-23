@@ -81,4 +81,11 @@ export const getAllPlayerPerformance = () => api.get('/players/performance/all')
 // ============ HOLD PROJECTOR ============
 export const getHoldProjection = (data) => api.post('/projections/hold', data);
 
+// ============ CARDSIGHT SEARCH ============
+export const searchCardsight = (query, limit = 20, sport = null) => {
+  const params = { q: query, limit };
+  if (sport) params.sport = sport;
+  return api.get('/cards/search/cardsight', { params });
+};
+
 export default api;
