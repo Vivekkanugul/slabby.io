@@ -39,7 +39,8 @@ Build the most analytical collectible card platform in the market with features 
 - [x] **Real Card Search** - Search 7M+ real cards from CardSight database
 - [x] **API Endpoint** - `/api/cards/search/cardsight?q={query}&limit={n}` 
 - [x] **Data Conversion** - CardSight results converted to CardBase format with simulated pricing
-- [x] **Frontend Integration** - AI Research Terminal shows both local and CardSight results
+- [x] **AI Research Terminal** - Shows both local and CardSight results with Globe icon
+- [x] **Trading Hub Integration** - CardSight search in Buy Cards tab
 - [x] **Full Analytics** - CardSight cards get same analytics (technicals, fundamentals, price targets)
 - [x] **Visual Distinction** - CardSight results show cyan styling and Globe icon
 

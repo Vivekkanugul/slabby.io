@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { getCards, getMarketplaceListings, getMarketValuations, createListing, buyFromMarketplace } from '../lib/api';
+import { getCards, getMarketplaceListings, getMarketValuations, createListing, buyFromMarketplace, searchCardsight } from '../lib/api';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import {
@@ -14,7 +14,7 @@ import { toast } from 'sonner';
 import {
   Search, Filter, TrendingUp, TrendingDown, DollarSign, ShoppingCart, Tag,
   ArrowUpRight, ArrowDownRight, Minus, Loader2, ChevronDown, ChevronUp,
-  Target, BarChart3, Zap, ShieldCheck, AlertTriangle, X
+  Target, BarChart3, Zap, ShieldCheck, AlertTriangle, X, Globe
 } from 'lucide-react';
 
 export default function Marketplace() {
@@ -33,6 +33,12 @@ export default function Marketplace() {
   const [sellPrice, setSellPrice] = useState('');
   const [sellQuantity, setSellQuantity] = useState('1');
   const [submitting, setSubmitting] = useState(false);
+  
+  // CardSight search state
+  const [cardsightSearch, setCardsightSearch] = useState('');
+  const [cardsightResults, setCardsightResults] = useState([]);
+  const [cardsightLoading, setCardsightLoading] = useState(false);
+  const [showCardsight, setShowCardsight] = useState(false);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -54,6 +60,29 @@ export default function Marketplace() {
   }, [category]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
+
+  // CardSight search with debounce
+  useEffect(() => {
+    if (cardsightSearch.trim().length < 2) {
+      setCardsightResults([]);
+      return;
+    }
+    
+    const timer = setTimeout(async () => {
+      setCardsightLoading(true);
+      try {
+        const response = await searchCardsight(cardsightSearch.trim(), 20);
+        setCardsightResults(response.data?.cards || []);
+      } catch (err) {
+        console.error('CardSight search failed:', err);
+        setCardsightResults([]);
+      } finally {
+        setCardsightLoading(false);
+      }
+    }, 400);
+
+    return () => clearTimeout(timer);
+  }, [cardsightSearch]);
 
   const getValuation = (cardId) => valuations.find(v => v.card_id === cardId);
 
@@ -115,7 +144,7 @@ export default function Marketplace() {
     }
   };
 
-  const categories = ['all', 'Basketball', 'Baseball', 'Football'];
+  const categories = ['all', 'Basketball', 'Baseball', 'Football', 'Hockey'];
 
   const MomentumBadge = ({ pct }) => {
     if (pct > 3) return <span className="flex items-center gap-1 text-xs font-semibold text-emerald-400 bg-emerald-400/10 px-2 py-0.5 rounded-full"><TrendingUp className="w-3 h-3" />Bullish</span>;
@@ -220,6 +249,12 @@ export default function Marketplace() {
           setBuyConfirm={setBuyConfirm}
           isAuthenticated={isAuthenticated}
           MomentumBadge={MomentumBadge}
+          cardsightSearch={cardsightSearch}
+          setCardsightSearch={setCardsightSearch}
+          cardsightResults={cardsightResults}
+          cardsightLoading={cardsightLoading}
+          showCardsight={showCardsight}
+          setShowCardsight={setShowCardsight}
         />
       ) : activeTab === 'sell' ? (
         <SellView
@@ -263,7 +298,7 @@ export default function Marketplace() {
 }
 
 // ============ BUY VIEW ============
-function BuyView({ cards, getValuation, expandedCard, setExpandedCard, listings, setBuyConfirm, isAuthenticated, MomentumBadge }) {
+function BuyView({ cards, getValuation, expandedCard, setExpandedCard, listings, setBuyConfirm, isAuthenticated, MomentumBadge, cardsightSearch, setCardsightSearch, cardsightResults, cardsightLoading, showCardsight, setShowCardsight }) {
   return (
     <div className="space-y-3" data-testid="buy-view">
       {/* Guide banner */}
@@ -276,6 +311,121 @@ function BuyView({ cards, getValuation, expandedCard, setExpandedCard, listings,
             Target buying at <span className="text-emerald-400">80-90% of FMV</span> to build in profit margin for resale.
           </p>
         </div>
+      </div>
+
+      {/* CardSight Search Section */}
+      <div className="bg-gradient-to-r from-cyan-950/40 to-[#0A0A0C] border border-cyan-500/30 rounded-xl p-4 mb-4">
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center gap-2">
+            <Globe className="w-4 h-4 text-cyan-400" />
+            <span className="text-sm font-medium text-white">Search CardSight Database</span>
+            <span className="text-[10px] px-2 py-0.5 rounded bg-cyan-500/20 text-cyan-400">7M+ Cards</span>
+          </div>
+          <button 
+            onClick={() => setShowCardsight(!showCardsight)}
+            className="text-xs text-cyan-400 hover:text-cyan-300"
+          >
+            {showCardsight ? 'Hide' : 'Expand'}
+          </button>
+        </div>
+        
+        <div className="relative">
+          <Globe className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-cyan-500" />
+          <input
+            type="text"
+            value={cardsightSearch}
+            onChange={(e) => { setCardsightSearch(e.target.value); setShowCardsight(true); }}
+            placeholder="Search any player, team, or card set..."
+            className="w-full pl-10 pr-10 py-2.5 bg-white/5 border border-cyan-500/30 rounded-lg text-sm text-white placeholder:text-zinc-500 focus:outline-none focus:border-cyan-400"
+            data-testid="cardsight-marketplace-search"
+          />
+          {cardsightLoading && (
+            <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 animate-spin text-cyan-400" />
+          )}
+          {cardsightSearch && !cardsightLoading && (
+            <button 
+              onClick={() => { setCardsightSearch(''); setCardsightResults([]); }}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-white"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          )}
+        </div>
+
+        {/* CardSight Results */}
+        {showCardsight && cardsightSearch.length >= 2 && (
+          <div className="mt-3 space-y-2 max-h-96 overflow-y-auto custom-scrollbar">
+            {cardsightLoading ? (
+              <div className="text-center py-6">
+                <Loader2 className="w-6 h-6 animate-spin text-cyan-400 mx-auto" />
+                <p className="text-xs text-zinc-500 mt-2">Searching CardSight database...</p>
+              </div>
+            ) : cardsightResults.length > 0 ? (
+              <>
+                <p className="text-[10px] text-cyan-400 uppercase tracking-wider mb-2">{cardsightResults.length} cards found</p>
+                {cardsightResults.map(card => (
+                  <div 
+                    key={card.id} 
+                    className="bg-cyan-950/30 border border-cyan-500/20 rounded-lg p-3 hover:bg-cyan-950/50 transition-colors"
+                    data-testid={`cardsight-card-${card.id}`}
+                  >
+                    <div className="flex items-center gap-3">
+                      <img 
+                        src={card.image_url} 
+                        alt={card.name} 
+                        className="w-10 h-14 object-cover rounded shrink-0" 
+                        onError={(e) => { e.target.src = 'https://images.pexels.com/photos/7809125/pexels-photo-7809125.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940'; }}
+                      />
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-0.5">
+                          <span className="text-[9px] uppercase tracking-wider text-cyan-400">{card.category}</span>
+                          <span className="text-[9px] text-zinc-500">{card.year}</span>
+                          <span className="text-[9px] px-1.5 py-0.5 rounded bg-white/10 text-zinc-400">{card.grade}</span>
+                        </div>
+                        <p className="text-xs font-medium text-white truncate">{card.player_name}</p>
+                        <p className="text-[10px] text-zinc-500 truncate">{card.set_name}</p>
+                      </div>
+                      <div className="text-right shrink-0">
+                        <div className="text-xs font-bold text-cyan-400 font-mono">${card.current_price?.toLocaleString()}</div>
+                        <div className={`text-[10px] font-mono ${card.price_change_pct > 0 ? 'text-emerald-400' : card.price_change_pct < 0 ? 'text-red-400' : 'text-zinc-400'}`}>
+                          {card.price_change_pct > 0 ? '+' : ''}{card.price_change_pct?.toFixed(1)}%
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex items-center justify-between mt-2 pt-2 border-t border-cyan-500/10">
+                      <div className="flex items-center gap-3 text-[10px] text-zinc-500">
+                        <span>Vol: {card.volume_24h}</span>
+                        <span>Beta: {card.beta?.toFixed(2)}</span>
+                        <span className={`px-1.5 py-0.5 rounded ${card.rarity === 'Legendary' ? 'bg-amber-500/20 text-amber-400' : card.rarity === 'Ultra Rare' ? 'bg-purple-500/20 text-purple-400' : card.rarity === 'Rare' ? 'bg-blue-500/20 text-blue-400' : 'bg-zinc-500/20 text-zinc-400'}`}>
+                          {card.rarity}
+                        </span>
+                      </div>
+                      <a 
+                        href={`/ai-insights`}
+                        className="text-[10px] text-cyan-400 hover:text-cyan-300 flex items-center gap-1"
+                      >
+                        View Analytics <ArrowUpRight className="w-3 h-3" />
+                      </a>
+                    </div>
+                  </div>
+                ))}
+              </>
+            ) : (
+              <p className="text-xs text-zinc-500 text-center py-4">No cards found. Try a different search term.</p>
+            )}
+          </div>
+        )}
+        
+        {!showCardsight && !cardsightSearch && (
+          <p className="text-[10px] text-zinc-500 mt-2">Search millions of real sports cards from the CardSight database</p>
+        )}
+      </div>
+
+      {/* Divider */}
+      <div className="flex items-center gap-3 my-4">
+        <div className="flex-1 h-px bg-white/10"></div>
+        <span className="text-xs text-zinc-500 uppercase tracking-wider">Portfolio Cards</span>
+        <div className="flex-1 h-px bg-white/10"></div>
       </div>
 
       {cards.map(card => {
