@@ -15,7 +15,7 @@ import { formatCurrency, formatPercent, getPriceChangeColor } from '../lib/utils
 import {
   AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer,
   ComposedChart, Line, Bar, ReferenceLine, BarChart, RadarChart,
-  PolarGrid, PolarAngleAxis, Radar, PolarRadiusAxis
+  PolarGrid, PolarAngleAxis, Radar, PolarRadiusAxis, Cell
 } from 'recharts';
 
 export default function AIInsights() {
@@ -359,19 +359,24 @@ export default function AIInsights() {
                   {/* Grade Population Breakdown */}
                   <div className="bg-[#0A0A0C] border border-white/10 rounded-xl p-5">
                     <h3 className="font-medium text-white mb-4 text-sm">Grade Population Distribution</h3>
-                    <ResponsiveContainer width="100%" height={200}>
-                      <BarChart data={selectedCard.fundamentals?.grade_distribution || []}>
-                        <XAxis dataKey="grade" axisLine={false} tickLine={false} tick={{ fill: '#71717A', fontSize: 11 }} />
-                        <YAxis axisLine={false} tickLine={false} tick={{ fill: '#52525B', fontSize: 10 }} />
+                    <ResponsiveContainer width="100%" height={220}>
+                      <BarChart data={selectedCard.fundamentals?.grade_distribution || []} barSize={40}>
+                        <XAxis dataKey="grade" axisLine={false} tickLine={false} tick={{ fill: '#A1A1AA', fontSize: 12, fontWeight: 500 }} />
+                        <YAxis axisLine={false} tickLine={false} tick={{ fill: '#71717A', fontSize: 11 }} />
                         <Tooltip content={<GradeTooltip />} />
-                        <Bar dataKey="count" radius={[4,4,0,0]}>
-                          {(selectedCard.fundamentals?.grade_distribution || []).map((entry, i) => (
-                            <rect key={i} fill={entry.grade === selectedCard.card?.grade?.replace('PSA ','')?.replace('BGS ','') ? '#007AFF' : '#27272A'} />
-                          ))}
+                        <Bar dataKey="count" radius={[6,6,0,0]}>
+                          {(selectedCard.fundamentals?.grade_distribution || []).map((entry, i) => {
+                            const cardGrade = selectedCard.card?.grade?.replace('PSA ','')?.replace('BGS ','');
+                            const isHighlighted = entry.grade === cardGrade;
+                            return <Cell key={i} fill={isHighlighted ? '#007AFF' : '#3F3F46'} />;
+                          })}
                         </Bar>
                       </BarChart>
                     </ResponsiveContainer>
-                    <div className="text-center mt-1"><span className="text-[10px] text-zinc-500">Highlighted = this card's grade</span></div>
+                    <div className="flex items-center justify-center gap-4 mt-2">
+                      <div className="flex items-center gap-1.5"><div className="w-3 h-3 rounded-sm bg-[#007AFF]" /><span className="text-[10px] text-zinc-400">This card's grade</span></div>
+                      <div className="flex items-center gap-1.5"><div className="w-3 h-3 rounded-sm bg-[#3F3F46]" /><span className="text-[10px] text-zinc-400">Other grades</span></div>
+                    </div>
                   </div>
 
                   {/* Supply/Demand + Ownership */}
@@ -959,12 +964,22 @@ function genComparables(card, allCards) {
 
 function genFundamentals(card) {
   if (!card) return null;
-  const pop = Math.floor(card.market_cap / card.current_price);
+  // Realistic PSA populations — higher for modern cards, lower for vintage
+  const basePop = card.year < 1990 ? 1500 : card.year < 2010 ? 3000 : 8000;
+  const pop = Math.max(500, basePop + Math.floor(card.volume_24h * 20));
   const scarcity = card.rarity === 'Legendary' ? 92 : card.rarity === 'Ultra Rare' ? 75 : card.rarity === 'Rare' ? 55 : 30;
   const buyers = Math.floor(card.volume_24h * 1.3);
   const sellers = Math.floor(card.volume_24h * 0.8);
   const grades = ['6','7','8','9','9.5','10'];
-  const dist = grades.map(g => ({ grade: g, count: g === '10' ? Math.floor(pop * 0.05) : g === '9.5' ? Math.floor(pop * 0.08) : g === '9' ? Math.floor(pop * 0.25) : g === '8' ? Math.floor(pop * 0.3) : g === '7' ? Math.floor(pop * 0.2) : Math.floor(pop * 0.12) }));
+  const dist = grades.map(g => ({
+    grade: g,
+    count: g === '10' ? Math.floor(pop * 0.04) :
+           g === '9.5' ? Math.floor(pop * 0.07) :
+           g === '9' ? Math.floor(pop * 0.22) :
+           g === '8' ? Math.floor(pop * 0.32) :
+           g === '7' ? Math.floor(pop * 0.21) :
+           Math.floor(pop * 0.14)
+  }));
   return {
     population: pop, pop_higher: Math.floor(pop * 0.03), scarcity_index: scarcity,
     avg_sale_price_30d: card.current_price * 0.96, sales_volume_30d: card.volume_24h * 8,
