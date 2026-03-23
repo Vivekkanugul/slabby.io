@@ -22,19 +22,28 @@ Build the most analytical collectible card platform in the market with features 
 - Frontend: React 19, Tailwind CSS, Shadcn/UI, Recharts
 - Backend: FastAPI, MongoDB, JWT
 - AI: OpenAI GPT-5.2 via Emergent integrations
+- External APIs: CardSight AI (7M+ card catalog)
 - Deployment: Emergent platform
 
 ## What's Been Implemented
 
 ### Core Features
 - [x] JWT authentication (register/login)
-- [x] Cards API with 10 mock cards (Basketball, Baseball, Football)
+- [x] Cards API with 13 mock cards (Basketball, Baseball, Football, Hockey)
 - [x] Portfolio management (add/remove, P&L tracking)
 - [x] Transaction history
 - [x] AI Predictions (mock + GPT-5.2)
 - [x] Market overview statistics
 
-### Trading Hub (March 22, 2026) - LATEST
+### CardSight AI Integration (March 23, 2026) - LATEST
+- [x] **Real Card Search** - Search 7M+ real cards from CardSight database
+- [x] **API Endpoint** - `/api/cards/search/cardsight?q={query}&limit={n}` 
+- [x] **Data Conversion** - CardSight results converted to CardBase format with simulated pricing
+- [x] **Frontend Integration** - AI Research Terminal shows both local and CardSight results
+- [x] **Full Analytics** - CardSight cards get same analytics (technicals, fundamentals, price targets)
+- [x] **Visual Distinction** - CardSight results show cyan styling and Globe icon
+
+### Trading Hub (March 22, 2026)
 - [x] **Buy Cards Tab** - Browse all cards with AI Fair Market Value, Buy Target (80-90% FMV), Profit Potential
 - [x] **Sell Cards Tab** - List cards with AI Suggested Sell Range (95-105% FMV), volume data
 - [x] **Active Listings Tab** - View all active marketplace listings with FMV comparison
@@ -43,6 +52,14 @@ Build the most analytical collectible card platform in the market with features 
 - [x] **Buy Confirmation** - Shows asking price vs FMV, potential profit calculation
 - [x] **Market Valuation API** - `/api/marketplace/valuations` with algorithmic FMV calculation
 
+### AI Research Terminal
+- [x] **Player Search** - Search local portfolio + CardSight database
+- [x] **Price Targets** - Bull/Base/Bear 12-month projections
+- [x] **Technical Analysis** - RSI, MACD, Stochastic, ADX, Support/Resistance levels
+- [x] **Fundamentals** - PSA Population, Scarcity Index, Liquidity Score
+- [x] **Player Stats** - Game-by-game performance (NBA/MLB/NFL/NHL)
+- [x] **Hold Projector** - Multi-timeframe value projections with probability distributions
+
 ### Advanced Analytics
 - [x] What-If Simulator (9 scenario types)
 - [x] Social Sentiment Heatmap
@@ -50,7 +67,6 @@ Build the most analytical collectible card platform in the market with features 
 - [x] Card Screener (replaced Stress Test)
 - [x] Arbitrage Finder
 - [x] Smart Alerts with Context
-- [x] AI Research Terminal with Bull/Bear price targets
 
 ### Watchlist
 - [x] Add/remove cards to watchlist
@@ -59,24 +75,20 @@ Build the most analytical collectible card platform in the market with features 
 
 ### Pages
 - [x] Landing page, Auth (Login/Register)
-- [x] Dashboard with portfolio stats, charts, AI signals
 - [x] Trading Hub (Marketplace) with Buy/Sell/Listings
-- [x] Card detail with price history, AI prediction
-- [x] Portfolio with holdings table, transactions
-- [x] Watchlist with custom alerts
-- [x] AI Insights / Research page
+- [x] Portfolio with holdings table, transactions, watchlist tab
+- [x] AI Research Terminal
 - [x] Analytics Hub
 - [x] Profile settings
 
-### Removed
-- [x] Earnings Tracker (removed per user request, March 22 2026)
-
 ## API Endpoints
+
 ### Core
 - `POST /api/auth/register`, `POST /api/auth/login`, `GET /api/auth/me`
 - `GET /api/cards`, `GET /api/cards/trending`, `GET /api/cards/{id}`, `GET /api/cards/{id}/price-history`
+- `GET /api/cards/search/cardsight` - **NEW** CardSight API search
 - `GET /api/marketplace/listings`, `POST /api/marketplace/list`, `POST /api/marketplace/buy`
-- `GET /api/marketplace/valuations`, `GET /api/marketplace/valuation/{card_id}` (NEW)
+- `GET /api/marketplace/valuations`, `GET /api/marketplace/valuation/{card_id}`
 - `GET /api/portfolio`, `GET /api/portfolio/summary`, `POST /api/portfolio/add`, `DELETE /api/portfolio/{id}`
 - `GET /api/transactions`
 - `GET /api/predictions`, `GET /api/predictions/{id}`, `POST /api/predictions/analyze`
@@ -86,25 +98,54 @@ Build the most analytical collectible card platform in the market with features 
 - `POST /api/analytics/grade-probability`, `GET /api/analytics/arbitrage`
 - `GET /api/analytics/smart-alerts`, `GET /api/analytics/portfolio-metrics`
 
+### Player Performance
+- `GET /api/players/{card_id}/performance`
+- `POST /api/projections/hold`
+
 ### Watchlist
 - `GET /api/watchlist`, `POST /api/watchlist`, `PUT /api/watchlist/{id}`, `DELETE /api/watchlist/{id}`
 
-## Data Sources (MOCKED)
-- All card data mocked in MOCK_CARDS list
-- Market valuations calculated algorithmically
-- Social sentiment mocked
+## Data Sources
+| Data Type | Source | Status |
+|-----------|--------|--------|
+| Card Catalog | CardSight AI API | LIVE (7M+ cards) |
+| Card Pricing | Simulated from catalog data | SIMULATED |
+| Player Performance | Mock engine per sport | MOCKED |
+| Market Valuations | Algorithmic calculation | MOCKED |
+| Social Sentiment | Mock data | MOCKED |
+
+## 3rd Party Integrations
+1. **CardSight AI** - Card catalog search (API Key in backend/.env)
+2. **OpenAI GPT-5.2** - AI analysis via Emergent LLM Key
 
 ## Next Steps (Prioritized)
-- [ ] P0: Replace mocked data with real MongoDB persistence
-- [ ] P1: Real eBay API for accurate price history
-- [ ] P1: Real sports stats API for player data
-- [ ] P1: Real social media sentiment API
-- [ ] P2: Real PSA population reports
-- [ ] P2: Fractional Card Ownership
-- [ ] P2: Real-time WebSocket price updates
-- [ ] P2: Email notifications for alerts
+
+### P0 - High Priority
+- [ ] Replace mocked user/portfolio data with real MongoDB persistence
+- [ ] Resolve "Game Impact" chart replacement (user requested change)
+
+### P1 - Medium Priority
+- [ ] Real eBay API for accurate price history
+- [ ] Real sports stats API for player data  
+- [ ] Real social media sentiment API
+- [ ] Refactor server.py (2400+ lines) into /routes, /models, /services
+
+### P2 - Future Enhancements
+- [ ] Real PSA population reports
+- [ ] Fractional Card Ownership
+- [ ] Real-time WebSocket price updates
+- [ ] Email notifications for alerts
+
+## Known Limitations
+- CardSight API provides catalog data only (no pricing) - prices are simulated
+- Player performance data is mocked, not connected to real sports APIs
+- Teams set for 2026 simulation (LeBron/Luka on Lakers, Trae on Wizards)
+
+## Test Credentials
+- Email: `debugtest@test.com` / Password: `password123`
+- Email: `fulltest8107@cardwise.com` / Password: `password123`
 
 ## Notes
-- All external APIs are MOCKED with realistic sample data
-- GPT-5.2 integration active for AI analysis feature
 - Dark fintech theme with cyan accent for AI features
+- GPT-5.2 integration active for AI analysis feature
+- CardSight integration adds real card discovery while keeping simulated analytics

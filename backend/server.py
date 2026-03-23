@@ -967,8 +967,8 @@ async def search_cards_cardsight(q: str, limit: int = 20, sport: Optional[str] =
     
     results = await search_cardsight(q, limit, sport)
     
-    # Convert to our card format
-    cards = [cardsight_to_cardbase(r, i) for i, r in enumerate(results)]
+    # Convert to our card format and enforce limit
+    cards = [cardsight_to_cardbase(r, i) for i, r in enumerate(results[:limit])]
     
     return {
         "query": q,
