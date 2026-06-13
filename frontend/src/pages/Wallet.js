@@ -1,13 +1,16 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { getWallet, depositToWallet, withdrawFromWallet, getWalletTransactions } from '../lib/api';
+import { useSearchParams } from 'react-router-dom';
+import { getWallet, withdrawFromWallet, getWalletTransactions } from '../lib/api';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
-import { Wallet as WalletIcon, ArrowDownLeft, ArrowUpRight, Clock, DollarSign, Lock, TrendingUp } from 'lucide-react';
+import { Wallet as WalletIcon, ArrowDownLeft, ArrowUpRight, Clock, DollarSign, Lock, TrendingUp, CreditCard, CheckCircle2, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
+import api from '../lib/api';
 
 export default function Wallet() {
   const { user } = useAuth();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [wallet, setWallet] = useState(null);
   const [transactions, setTransactions] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -15,12 +18,11 @@ export default function Wallet() {
   const [showWithdraw, setShowWithdraw] = useState(false);
   const [amount, setAmount] = useState('');
   const [processing, setProcessing] = useState(false);
+  const [packages, setPackages] = useState([]);
+  const [selectedPackage, setSelectedPackage] = useState(null);
+  const [checkingPayment, setCheckingPayment] = useState(false);
 
-  useEffect(() => {
-    fetchWalletData();
-  }, []);
-
-  const fetchWalletData = async () => {
+  const fetchWalletData = useCallback(async () => {
     try {
       const [walletRes, txRes] = await Promise.all([
         getWallet(),
@@ -34,25 +36,83 @@ export default function Wallet() {
     } finally {
       setLoading(false);
     }
+  }, []);
+
+  const fetchPackages = async () => {
+    try {
+      const response = await api.get('/payments/packages');
+      setPackages(response.data.packages);
+    } catch (error) {
+      console.error('Failed to fetch packages:', error);
+    }
   };
 
-  const handleDeposit = async () => {
-    const numAmount = parseFloat(amount);
-    if (!numAmount || numAmount <= 0) {
-      toast.error('Enter a valid amount');
+  useEffect(() => { 
+    fetchWalletData();
+    fetchPackages();
+  }, [fetchWalletData]);
+
+  // Check for payment return
+  useEffect(() => {
+    const sessionId = searchParams.get('session_id');
+    const status = searchParams.get('status');
+    
+    if (sessionId && status === 'success') {
+      setCheckingPayment(true);
+      pollPaymentStatus(sessionId);
+    } else if (status === 'cancelled') {
+      toast.error('Payment cancelled');
+      setSearchParams({});
+    }
+  }, [searchParams, setSearchParams]);
+
+  const pollPaymentStatus = async (sessionId, attempts = 0) => {
+    const maxAttempts = 5;
+    
+    if (attempts >= maxAttempts) {
+      setCheckingPayment(false);
+      toast.error('Payment status check timed out. Please check your email for confirmation.');
+      setSearchParams({});
+      return;
+    }
+
+    try {
+      const response = await api.get(`/payments/deposit/status/${sessionId}`);
+      
+      if (response.data.payment_status === 'paid') {
+        toast.success(`$${response.data.amount} deposited successfully!`);
+        setCheckingPayment(false);
+        setSearchParams({});
+        fetchWalletData();
+        return;
+      }
+
+      // Continue polling
+      setTimeout(() => pollPaymentStatus(sessionId, attempts + 1), 2000);
+    } catch (error) {
+      console.error('Error checking payment:', error);
+      setCheckingPayment(false);
+      setSearchParams({});
+    }
+  };
+
+  const handleStripeDeposit = async () => {
+    if (!selectedPackage) {
+      toast.error('Please select an amount');
       return;
     }
 
     setProcessing(true);
     try {
-      await depositToWallet(numAmount);
-      toast.success(`$${numAmount} deposited successfully!`);
-      setShowDeposit(false);
-      setAmount('');
-      fetchWalletData();
+      const response = await api.post('/payments/deposit/checkout', {
+        package_id: selectedPackage,
+        origin_url: window.location.origin
+      });
+
+      // Redirect to Stripe
+      window.location.href = response.data.checkout_url;
     } catch (error) {
-      toast.error(error.response?.data?.detail || 'Deposit failed');
-    } finally {
+      toast.error(error.response?.data?.detail || 'Failed to create checkout');
       setProcessing(false);
     }
   };
@@ -85,16 +145,19 @@ export default function Wallet() {
     return <DollarSign className="w-4 h-4 text-zinc-500" />;
   };
 
-  const getTxColor = (type, amount) => {
-    if (amount > 0) return 'text-green-500';
-    if (amount < 0) return 'text-red-500';
+  const getTxColor = (type, txAmount) => {
+    if (txAmount > 0) return 'text-green-500';
+    if (txAmount < 0) return 'text-red-500';
     return 'text-zinc-400';
   };
 
-  if (loading) {
+  if (loading || checkingPayment) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#05050A]">
-        <div className="w-8 h-8 border-2 border-[#FF6B00] border-t-transparent rounded-full animate-spin" />
+      <div className="min-h-screen flex flex-col items-center justify-center bg-[#05050A]">
+        <div className="w-8 h-8 border-2 border-[#FF6B00] border-t-transparent rounded-full animate-spin mb-4" />
+        {checkingPayment && (
+          <p className="text-zinc-400">Verifying payment...</p>
+        )}
       </div>
     );
   }
@@ -206,57 +269,64 @@ export default function Wallet() {
           )}
         </div>
 
-        {/* Deposit Modal */}
+        {/* Deposit Modal with Stripe */}
         {showDeposit && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
             <div className="bg-[#0A0A0C] border border-white/10 rounded-2xl w-full max-w-md p-6">
-              <h2 className="text-xl font-bold text-white mb-4">Deposit Funds</h2>
+              <h2 className="text-xl font-bold text-white mb-2">Deposit Funds</h2>
+              <p className="text-sm text-zinc-400 mb-6">Select an amount to add to your wallet</p>
               
-              <div className="mb-6">
-                <label className="block text-sm text-zinc-400 mb-2">Amount (USD)</label>
-                <Input
-                  type="number"
-                  placeholder="0.00"
-                  value={amount}
-                  onChange={(e) => setAmount(e.target.value)}
-                  className="bg-[#121214] border-white/10 h-12 text-lg"
-                  data-testid="deposit-amount-input"
-                />
-              </div>
-              
-              <div className="flex gap-2 mb-6">
-                {[25, 50, 100, 250].map((preset) => (
-                  <Button
-                    key={preset}
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setAmount(preset.toString())}
-                    className="flex-1 border-white/10"
+              {/* Package Selection */}
+              <div className="grid grid-cols-2 gap-3 mb-6">
+                {packages.map((pkg) => (
+                  <button
+                    key={pkg.id}
+                    onClick={() => setSelectedPackage(pkg.id)}
+                    className={`p-4 rounded-xl border-2 transition-all ${
+                      selectedPackage === pkg.id
+                        ? 'border-[#FF6B00] bg-[#FF6B00]/10'
+                        : 'border-white/10 hover:border-white/20'
+                    }`}
                   >
-                    ${preset}
-                  </Button>
+                    <p className="text-xl font-bold text-white">{pkg.label}</p>
+                  </button>
                 ))}
               </div>
               
-              <p className="text-xs text-zinc-500 mb-6">
-                Note: In production, this will integrate with Stripe for secure payment processing.
-              </p>
+              {/* Stripe Info */}
+              <div className="bg-[#121214] rounded-lg p-4 mb-6 flex items-center gap-3">
+                <CreditCard className="w-5 h-5 text-zinc-400" />
+                <div>
+                  <p className="text-sm text-white">Secure Payment via Stripe</p>
+                  <p className="text-xs text-zinc-500">Credit/Debit cards accepted</p>
+                </div>
+              </div>
               
               <div className="flex gap-3">
                 <Button
                   variant="outline"
                   className="flex-1"
-                  onClick={() => { setShowDeposit(false); setAmount(''); }}
+                  onClick={() => { setShowDeposit(false); setSelectedPackage(null); }}
                 >
                   Cancel
                 </Button>
                 <Button
                   className="flex-1 bg-green-600 hover:bg-green-700"
-                  onClick={handleDeposit}
-                  disabled={processing || !amount}
+                  onClick={handleStripeDeposit}
+                  disabled={processing || !selectedPackage}
                   data-testid="confirm-deposit-btn"
                 >
-                  {processing ? 'Processing...' : 'Deposit'}
+                  {processing ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Processing...
+                    </>
+                  ) : (
+                    <>
+                      <CheckCircle2 className="w-4 h-4 mr-2" />
+                      Continue to Payment
+                    </>
+                  )}
                 </Button>
               </div>
             </div>

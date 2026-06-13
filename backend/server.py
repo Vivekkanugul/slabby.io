@@ -75,6 +75,8 @@ async def lifespan(app: FastAPI):
     await db.wallets.create_index("user_id", unique=True)
     await db.events.create_index([("aggregate_type", 1), ("aggregate_id", 1), ("version", 1)])
     await db.events.create_index("timestamp")
+    await db.payment_transactions.create_index("session_id", unique=True)
+    await db.payment_transactions.create_index("user_id")
     
     logger.info("Database indexes created")
     
@@ -109,6 +111,9 @@ from routes.trades import router as trades_router
 from routes.razz import router as razz_router
 from routes.wallet import router as wallet_router
 from routes.admin import router as admin_router
+from routes.payments import router as payments_router
+from routes.websocket import router as ws_router
+from routes.ebay import router as ebay_router
 
 # Register all routes under /api prefix
 app.include_router(auth_router, prefix="/api")
@@ -117,6 +122,11 @@ app.include_router(trades_router, prefix="/api")
 app.include_router(razz_router, prefix="/api")
 app.include_router(wallet_router, prefix="/api")
 app.include_router(admin_router, prefix="/api")
+app.include_router(payments_router, prefix="/api")
+app.include_router(ebay_router, prefix="/api")
+
+# WebSocket routes (no /api prefix)
+app.include_router(ws_router)
 
 
 @app.get("/api")
@@ -176,3 +186,13 @@ async def get_platform_stats():
         "active_trades": active_trades,
         "active_razzes": active_razzes
     }
+
+
+# Stripe Webhook Handler
+from fastapi import Request as FastAPIRequest
+
+@app.post("/api/webhook/stripe")
+async def stripe_webhook(request: FastAPIRequest):
+    """Handle Stripe webhook events"""
+    from routes.payments import handle_stripe_webhook
+    return await handle_stripe_webhook(request)

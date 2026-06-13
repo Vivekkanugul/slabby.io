@@ -14,7 +14,9 @@ Slabby is a premier P2P trading and provably fair razz (raffle) platform for col
 
 ### 2. Wallet System
 - Digital wallet for each user
-- Deposit/withdraw functionality (MOCKED - Stripe integration pending)
+- **Stripe Integration** for real deposits (test mode)
+- Predefined deposit packages: $25, $50, $100, $250, $500
+- Withdrawal functionality (MOCKED - Stripe Connect pending)
 - Balance tracking: available, pending, escrow
 - Full transaction history
 - Event-sourced ledger
@@ -44,11 +46,22 @@ Slabby is a premier P2P trading and provably fair razz (raffle) platform for col
 - Spot purchasing with wallet balance
 - Max spots per user limit
 
-### 6. Admin Portal
+### 6. Real-Time WebSocket Notifications
+- Trade updates (offer, counter, accept, reject)
+- Razz updates (spot purchased, draw complete)
+- Wallet balance changes
+- Public broadcast for marketplace activity
+
+### 7. Admin Portal
 - Platform statistics dashboard
 - User management (suspend/unsuspend)
 - Event log viewer
 - Role-based access (admin, super_admin)
+
+### 8. eBay Market Data (Prepared)
+- Search eBay listings for price comparison
+- Completed/sold item price history
+- Requires `EBAY_APP_ID` environment variable
 
 ## Technical Architecture
 
@@ -61,7 +74,10 @@ Slabby is a premier P2P trading and provably fair razz (raffle) platform for col
 │   ├── cards.py        # Card CRUD
 │   ├── trades.py       # P2P trading
 │   ├── razz.py         # Razz (raffle) system
-│   ├── wallet.py       # Banking/payments
+│   ├── wallet.py       # Banking/balances
+│   ├── payments.py     # Stripe integration
+│   ├── websocket.py    # Real-time notifications
+│   ├── ebay.py         # eBay market data
 │   └── admin.py        # Admin portal
 ├── services/
 │   ├── event_store.py  # Append-only event log
@@ -70,14 +86,9 @@ Slabby is a premier P2P trading and provably fair razz (raffle) platform for col
 │   ├── trade_service.py
 │   ├── razz_service.py
 │   └── wallet_service.py
-└── models/
-    ├── events.py       # Base event schemas
-    ├── user.py
-    ├── card.py
-    ├── trade.py
-    ├── razz.py
-    ├── wallet.py
-    └── admin.py
+├── models/
+│   └── (Pydantic schemas)
+└── seed_accounts.py    # Demo account seeder
 ```
 
 ### Frontend (React)
@@ -91,7 +102,7 @@ Slabby is a premier P2P trading and provably fair razz (raffle) platform for col
 │   ├── CardDetail.js
 │   ├── Trades.js       # P2P trade management
 │   ├── Razz.js         # Raffle browse & purchase
-│   └── Wallet.js       # Banking
+│   └── Wallet.js       # Banking with Stripe
 ├── components/
 │   └── Layout/Navbar.js # Slabby navigation
 └── lib/api.js          # API client
@@ -115,21 +126,34 @@ Slabby is a premier P2P trading and provably fair razz (raffle) platform for col
 - `GET /api/trades` - User's trades
 - `POST /api/trades/{id}/accept` - Accept trade
 - `POST /api/trades/{id}/reject` - Reject trade
-- `POST /api/trades/{id}/counter` - Counter offer
 
 ### Razz
 - `POST /api/razz` - Create razz (draft)
 - `GET /api/razz` - Browse active razzes
 - `POST /api/razz/{id}/publish` - Activate razz
 - `POST /api/razz/{id}/purchase` - Buy spots
-- `POST /api/razz/{id}/draw` - Execute draw (host only)
+- `POST /api/razz/{id}/draw` - Execute draw
 - `GET /api/razz/{id}/verify` - Verify fairness
+
+### Payments (Stripe)
+- `GET /api/payments/packages` - Get deposit packages
+- `POST /api/payments/deposit/checkout` - Create Stripe session
+- `GET /api/payments/deposit/status/{session_id}` - Check payment
+- `POST /api/webhook/stripe` - Stripe webhook
 
 ### Wallet
 - `GET /api/wallet` - Get wallet
-- `POST /api/wallet/deposit` - Deposit funds (MOCKED)
-- `POST /api/wallet/withdraw` - Withdraw funds (MOCKED)
+- `POST /api/wallet/withdraw` - Withdraw funds
 - `GET /api/wallet/transactions` - Transaction history
+
+### WebSocket
+- `ws://host/ws` - Public broadcast
+- `ws://host/ws/user?token=xxx` - Authenticated notifications
+
+### eBay (requires EBAY_APP_ID)
+- `GET /api/ebay/status` - Check configuration
+- `GET /api/ebay/search` - Search listings
+- `GET /api/ebay/price-history` - Get sold prices
 
 ## Design
 - Brand color: Orange `#FF6B00`
@@ -137,9 +161,14 @@ Slabby is a premier P2P trading and provably fair razz (raffle) platform for col
 - Slabby logo: Orange gradient "S" badge
 - Navigation: Marketplace, Trades, Razz, Wallet
 
+## Demo Accounts
+See `/app/memory/test_credentials.md`
+- **Demo User**: demo@slabby.com / demo123 ($1,000 balance, 3 cards)
+- **Admin**: admin@slabby.com / admin123 ($10,000 balance)
+
 ## Status
 
-### Completed (P0)
+### Completed (P0 + P1)
 - [x] Event-sourced data architecture
 - [x] User authentication (JWT)
 - [x] Wallet system with transactions
@@ -147,20 +176,27 @@ Slabby is a premier P2P trading and provably fair razz (raffle) platform for col
 - [x] P2P trade framework
 - [x] Provably fair razz engine
 - [x] Frontend with Slabby branding
+- [x] **Stripe Checkout integration** (deposits)
+- [x] **WebSocket real-time notifications**
+- [x] **eBay API structure** (ready for credentials)
+- [x] **Demo accounts seeded**
 
-### Pending (P1)
-- [ ] Stripe Connect integration for real payments
-- [ ] eBay API for market data (user lacks credentials)
-- [ ] Real-time notifications (WebSocket)
-
-### Future (P2)
+### Pending (P2)
+- [ ] Stripe Connect for withdrawals/payouts
 - [ ] Mobile-responsive design refinements
 - [ ] Advanced search filters
 - [ ] Trade history analytics
 - [ ] Razz statistics dashboard
 
-## MOCKED Integrations
-⚠️ **Stripe Connect**: Wallet deposits/withdrawals are MOCKED. Balance updates are instant without real payment processing. Production deployment requires Stripe Connect integration.
+## Integrations
+
+### Stripe (ACTIVE - Test Mode)
+- Deposit packages via Stripe Checkout
+- Test card: 4242 4242 4242 4242
+- Webhook handling at `/api/webhook/stripe`
+
+### eBay (PREPARED)
+Set `EBAY_APP_ID` in `/app/backend/.env` to enable market data.
 
 ## Test Credentials
 See `/app/memory/test_credentials.md`
