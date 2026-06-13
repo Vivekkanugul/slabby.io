@@ -39,7 +39,7 @@ export const Navbar = () => {
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
           <Link to="/" className="flex items-center gap-3 group" data-testid="logo-link">
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#00E5FF] to-[#00B4D8] flex items-center justify-center shadow-[0_0_15px_rgba(0,229,255,0.3)] transition-all duration-300 group-hover:shadow-[0_0_25px_rgba(0,229,255,0.5)]">
+            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#BCFF00] to-[#9FD900] flex items-center justify-center shadow-[0_0_15px_rgba(0,229,255,0.3)] transition-all duration-300 group-hover:shadow-[0_0_25px_rgba(0,229,255,0.5)]">
               <span className="font-heading font-semibold text-black text-sm">S</span>
             </div>
             <span className="font-heading font-medium text-xl tracking-tight text-white">Slabby</span>
@@ -62,7 +62,7 @@ export const Navbar = () => {
                   <link.icon className="w-4 h-4" />
                   {link.label}
                   {isActive(link.to) && (
-                    <span className="absolute bottom-0 left-4 right-4 h-[2px] bg-[#00E5FF] rounded-full" />
+                    <span className="absolute bottom-0 left-4 right-4 h-[2px] bg-[#BCFF00] rounded-full" />
                   )}
                 </Link>
               ))}
@@ -78,7 +78,7 @@ export const Navbar = () => {
                     data-testid="user-menu-trigger"
                     className="flex items-center gap-2.5 px-3 py-2 rounded-lg hover:bg-white/5 transition-all duration-200"
                   >
-                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#00E5FF] to-[#00B4D8] flex items-center justify-center ring-2 ring-white/10">
+                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#BCFF00] to-[#9FD900] flex items-center justify-center ring-2 ring-white/10">
                       <span className="text-black text-xs font-semibold">
                         {displayName.charAt(0).toUpperCase()}
                       </span>
@@ -110,7 +110,7 @@ export const Navbar = () => {
                   </Button>
                 </Link>
                 <Link to="/register">
-                  <Button data-testid="register-btn" className="bg-[#00E5FF] hover:bg-[#80F2FF] text-black text-sm font-semibold h-9 px-5 rounded-lg shadow-[0_0_15px_rgba(0,229,255,0.3)] hover:shadow-[0_0_25px_rgba(0,229,255,0.5)] transition-all">
+                  <Button data-testid="register-btn" className="bg-[#BCFF00] hover:bg-[#D4FF4D] text-black text-sm font-semibold h-9 px-5 rounded-lg shadow-[0_0_15px_rgba(0,229,255,0.3)] hover:shadow-[0_0_25px_rgba(0,229,255,0.5)] transition-all">
                     Get Started
                   </Button>
                 </Link>

@@ -168,8 +168,8 @@ export default function Wallet() {
         {/* Header */}
         <div className="mb-8">
           <h1 className="font-heading text-2xl font-medium text-white flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-[#00E5FF]/10 flex items-center justify-center">
-              <WalletIcon className="w-5 h-5 text-[#00E5FF]" />
+            <div className="w-10 h-10 rounded-xl bg-[#BCFF00]/10 flex items-center justify-center">
+              <WalletIcon className="w-5 h-5 text-[#BCFF00]" />
             </div>
             My Wallet
           </h1>
@@ -178,7 +178,7 @@ export default function Wallet() {
 
         {/* Balance Cards */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-          <div className="bg-gradient-to-br from-[#00E5FF] to-[#00B4D8] rounded-xl p-6" data-testid="available-balance">
+          <div className="bg-gradient-to-br from-[#BCFF00] to-[#9FD900] rounded-xl p-6" data-testid="available-balance">
             <div className="flex items-center justify-between mb-4">
               <span className="text-black/80 text-sm">Available Balance</span>
               <DollarSign className="w-5 h-5 text-black/60" />
@@ -379,7 +379,7 @@ export default function Wallet() {
                   Cancel
                 </Button>
                 <Button
-                  className="flex-1 bg-[#00E5FF] text-black hover:bg-[#80F2FF]"
+                  className="flex-1 bg-[#BCFF00] text-black hover:bg-[#D4FF4D]"
                   onClick={handleWithdraw}
                   disabled={processing || !amount || parseFloat(amount) > wallet?.available_balance}
                   data-testid="confirm-withdraw-btn"

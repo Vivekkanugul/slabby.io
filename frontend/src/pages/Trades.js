@@ -91,8 +91,8 @@ export default function Trades() {
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
           <div>
             <h1 className="font-heading text-2xl font-medium text-white flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-[#00E5FF]/10 flex items-center justify-center">
-                <Shuffle className="w-5 h-5 text-[#00E5FF]" />
+              <div className="w-10 h-10 rounded-xl bg-[#BCFF00]/10 flex items-center justify-center">
+                <Shuffle className="w-5 h-5 text-[#BCFF00]" />
               </div>
               My Trades
             </h1>
@@ -106,7 +106,7 @@ export default function Trades() {
                 variant={filter === f ? 'default' : 'outline'}
                 size="sm"
                 onClick={() => setFilter(f)}
-                className={filter === f ? 'bg-[#00E5FF] text-black hover:bg-[#80F2FF]' : 'border-white/10'}
+                className={filter === f ? 'bg-[#BCFF00] text-black hover:bg-[#D4FF4D]' : 'border-white/10'}
               >
                 {f.charAt(0).toUpperCase() + f.slice(1)}
               </Button>
@@ -170,7 +170,7 @@ export default function Trades() {
                         <p className="text-sm text-white">
                           {isSent ? trade.initiator_side.card_ids.length : trade.receiver_side.card_ids.length} cards
                           {(isSent ? trade.initiator_side.cash_amount : trade.receiver_side.cash_amount) > 0 && (
-                            <span className="text-[#00E5FF]">
+                            <span className="text-[#BCFF00]">
                               {' '}+ ${isSent ? trade.initiator_side.cash_amount : trade.receiver_side.cash_amount}
                             </span>
                           )}
@@ -181,7 +181,7 @@ export default function Trades() {
                         <p className="text-sm text-white">
                           {isSent ? trade.receiver_side.card_ids.length : trade.initiator_side.card_ids.length} cards
                           {(isSent ? trade.receiver_side.cash_amount : trade.initiator_side.cash_amount) > 0 && (
-                            <span className="text-[#00E5FF]">
+                            <span className="text-[#BCFF00]">
                               {' '}+ ${isSent ? trade.receiver_side.cash_amount : trade.initiator_side.cash_amount}
                             </span>
                           )}

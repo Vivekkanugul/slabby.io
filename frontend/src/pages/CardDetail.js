@@ -150,7 +150,7 @@ export default function CardDetail() {
           <div>
             <div className="mb-6">
               <div className="flex items-center gap-2 mb-2">
-                <span className="px-2 py-0.5 text-xs bg-[#00E5FF]/10 text-[#00E5FF] border border-[#00E5FF]/20 rounded">
+                <span className="px-2 py-0.5 text-xs bg-[#BCFF00]/10 text-[#BCFF00] border border-[#BCFF00]/20 rounded">
                   {getCategoryLabel(card.category)}
                 </span>
                 <span className="px-2 py-0.5 text-xs bg-white/5 text-zinc-400 border border-white/10 rounded">
@@ -170,7 +170,7 @@ export default function CardDetail() {
               <div className="bg-[#0A0A0C] border border-white/10 rounded-xl p-6 mb-6">
                 <p className="text-sm text-zinc-500 mb-1">Asking Price</p>
                 <div className="flex items-center gap-2 text-3xl font-bold text-white">
-                  <DollarSign className="w-6 h-6 text-[#00E5FF]" />
+                  <DollarSign className="w-6 h-6 text-[#BCFF00]" />
                   {card.asking_price.toLocaleString()}
                 </div>
               </div>
@@ -208,7 +208,7 @@ export default function CardDetail() {
             {isAuthenticated && !isOwner && card.status === 'available' && (
               <div className="space-y-3">
                 <Button
-                  className="w-full bg-[#00E5FF] text-black hover:bg-[#80F2FF] h-12"
+                  className="w-full bg-[#BCFF00] text-black hover:bg-[#D4FF4D] h-12"
                   onClick={() => setShowTradeModal(true)}
                   data-testid="make-offer-btn"
                 >
@@ -229,7 +229,7 @@ export default function CardDetail() {
               <div className="bg-[#0A0A0C] border border-white/10 rounded-xl p-6 text-center">
                 <p className="text-zinc-400 mb-4">Sign in to make offers on this card</p>
                 <Link to="/login">
-                  <Button className="bg-[#00E5FF] text-black hover:bg-[#80F2FF]">
+                  <Button className="bg-[#BCFF00] text-black hover:bg-[#D4FF4D]">
                     Sign In
                   </Button>
                 </Link>
@@ -279,7 +279,7 @@ export default function CardDetail() {
                   Cancel
                 </Button>
                 <Button
-                  className="flex-1 bg-[#00E5FF] text-black hover:bg-[#80F2FF]"
+                  className="flex-1 bg-[#BCFF00] text-black hover:bg-[#D4FF4D]"
                   onClick={handleMakeOffer}
                   disabled={submitting || !offerAmount}
                   data-testid="submit-offer-btn"

@@ -87,7 +87,7 @@ export default function Landing() {
       >
         <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
           <Link to="/" className="flex items-center gap-3 group" data-testid="logo-link">
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#00E5FF] to-[#00B4D8] flex items-center justify-center shadow-[0_0_20px_rgba(0,229,255,0.3)] transition-shadow duration-300 group-hover:shadow-[0_0_30px_rgba(0,229,255,0.5)]">
+            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#BCFF00] to-[#9FD900] flex items-center justify-center shadow-[0_0_20px_rgba(0,229,255,0.3)] transition-shadow duration-300 group-hover:shadow-[0_0_30px_rgba(0,229,255,0.5)]">
               <span className="font-heading font-semibold text-black text-sm">S</span>
             </div>
             <span className="font-heading font-medium text-xl tracking-tight">Slabby</span>
@@ -101,7 +101,7 @@ export default function Landing() {
           <div className="flex items-center gap-3">
             {isAuthenticated ? (
               <Link to="/marketplace">
-                <Button className="bg-[#00E5FF] text-black font-medium hover:bg-[#80F2FF] shadow-[0_0_20px_rgba(0,229,255,0.3)] transition-all" data-testid="go-to-app-btn">
+                <Button className="bg-[#BCFF00] text-black font-medium hover:bg-[#D4FF4D] shadow-[0_0_20px_rgba(0,229,255,0.3)] transition-all" data-testid="go-to-app-btn">
                   Open App
                 </Button>
               </Link>
@@ -113,7 +113,7 @@ export default function Landing() {
                   </Button>
                 </Link>
                 <Link to="/register">
-                  <Button className="bg-[#00E5FF] text-black font-medium hover:bg-[#80F2FF] shadow-[0_0_20px_rgba(0,229,255,0.3)] transition-all" data-testid="get-started-btn">
+                  <Button className="bg-[#BCFF00] text-black font-medium hover:bg-[#D4FF4D] shadow-[0_0_20px_rgba(0,229,255,0.3)] transition-all" data-testid="get-started-btn">
                     Get Started
                   </Button>
                 </Link>
@@ -131,8 +131,8 @@ export default function Landing() {
       >
         {/* Ambient Background */}
         <div className="absolute inset-0">
-          <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-[#00E5FF]/20 rounded-full blur-[120px] animate-pulse" />
-          <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-[#00B4D8]/15 rounded-full blur-[120px] animate-pulse delay-1000" />
+          <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-[#BCFF00]/20 rounded-full blur-[120px] animate-pulse" />
+          <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-[#9FD900]/15 rounded-full blur-[120px] animate-pulse delay-1000" />
         </div>
 
         <div className="relative z-10 max-w-7xl mx-auto px-6 py-20">
@@ -144,7 +144,7 @@ export default function Landing() {
               transition={{ duration: 0.6, delay: 0.2 }}
               className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 border border-white/10 backdrop-blur-md mb-8"
             >
-              <Sparkles className="w-4 h-4 text-[#00E5FF]" />
+              <Sparkles className="w-4 h-4 text-[#BCFF00]" />
               <span className="text-sm text-zinc-300">Event-Sourced Architecture</span>
             </motion.div>
 
@@ -156,7 +156,7 @@ export default function Landing() {
               className="font-heading text-5xl sm:text-6xl lg:text-7xl tracking-tighter font-medium mb-6"
             >
               Trade. Razz.{' '}
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#00E5FF] to-[#00B4D8]">
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#BCFF00] to-[#9FD900]">
                 Collect.
               </span>
             </motion.h1>
@@ -181,7 +181,7 @@ export default function Landing() {
             >
               {isAuthenticated ? (
                 <Link to="/marketplace">
-                  <Button size="lg" className="bg-[#00E5FF] text-black font-medium hover:bg-[#80F2FF] shadow-[0_0_30px_rgba(0,229,255,0.4)] hover:shadow-[0_0_40px_rgba(0,229,255,0.6)] transition-all px-8 h-14 text-base" data-testid="hero-cta-btn">
+                  <Button size="lg" className="bg-[#BCFF00] text-black font-medium hover:bg-[#D4FF4D] shadow-[0_0_30px_rgba(0,229,255,0.4)] hover:shadow-[0_0_40px_rgba(0,229,255,0.6)] transition-all px-8 h-14 text-base" data-testid="hero-cta-btn">
                     Enter Marketplace
                     <ArrowRight className="w-5 h-5 ml-2" />
                   </Button>
@@ -189,7 +189,7 @@ export default function Landing() {
               ) : (
                 <>
                   <Link to="/register">
-                    <Button size="lg" className="bg-[#00E5FF] text-black font-medium hover:bg-[#80F2FF] shadow-[0_0_30px_rgba(0,229,255,0.4)] hover:shadow-[0_0_40px_rgba(0,229,255,0.6)] transition-all px-8 h-14 text-base" data-testid="hero-cta-btn">
+                    <Button size="lg" className="bg-[#BCFF00] text-black font-medium hover:bg-[#D4FF4D] shadow-[0_0_30px_rgba(0,229,255,0.4)] hover:shadow-[0_0_40px_rgba(0,229,255,0.6)] transition-all px-8 h-14 text-base" data-testid="hero-cta-btn">
                       Start Trading Free
                       <ArrowRight className="w-5 h-5 ml-2" />
                     </Button>
@@ -217,7 +217,7 @@ export default function Landing() {
                 alt="Premium collectible cards"
                 className="w-full h-full object-cover opacity-60"
               />
-              <div className="absolute inset-0 bg-gradient-to-br from-[#00E5FF]/10 to-transparent" />
+              <div className="absolute inset-0 bg-gradient-to-br from-[#BCFF00]/10 to-transparent" />
             </div>
           </motion.div>
         </div>
@@ -234,7 +234,7 @@ export default function Landing() {
             transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
             className="w-6 h-10 rounded-full border-2 border-white/20 flex items-start justify-center p-2"
           >
-            <motion.div className="w-1.5 h-1.5 rounded-full bg-[#00E5FF]" />
+            <motion.div className="w-1.5 h-1.5 rounded-full bg-[#BCFF00]" />
           </motion.div>
         </motion.div>
       </motion.section>
@@ -254,7 +254,7 @@ export default function Landing() {
               >
                 <div className="font-heading text-4xl sm:text-5xl lg:text-6xl font-medium tracking-tight text-white mb-2">
                   {stat.value}
-                  <span className="text-[#00E5FF]">{stat.suffix}</span>
+                  <span className="text-[#BCFF00]">{stat.suffix}</span>
                 </div>
                 <div className="text-sm text-zinc-500 uppercase tracking-[0.2em]">{stat.label}</div>
               </motion.div>
@@ -295,14 +295,14 @@ export default function Landing() {
                 <div className={`
                   h-full p-8 rounded-2xl border transition-all duration-500 ease-out
                   ${hoveredFeature === feature.id 
-                    ? 'bg-[#0A0A0E] border-[#00E5FF]/30 shadow-[0_8px_32px_rgba(0,229,255,0.1)] -translate-y-1' 
+                    ? 'bg-[#0A0A0E] border-[#BCFF00]/30 shadow-[0_8px_32px_rgba(0,229,255,0.1)] -translate-y-1' 
                     : 'bg-[#0A0A0E]/50 border-white/5'}
                 `}>
                   <div className={`
                     w-12 h-12 rounded-xl flex items-center justify-center mb-6 transition-all duration-300
-                    ${hoveredFeature === feature.id ? 'bg-[#00E5FF]/20' : 'bg-white/5'}
+                    ${hoveredFeature === feature.id ? 'bg-[#BCFF00]/20' : 'bg-white/5'}
                   `}>
-                    <feature.icon className={`w-6 h-6 transition-colors duration-300 ${hoveredFeature === feature.id ? 'text-[#00E5FF]' : 'text-zinc-400'}`} />
+                    <feature.icon className={`w-6 h-6 transition-colors duration-300 ${hoveredFeature === feature.id ? 'text-[#BCFF00]' : 'text-zinc-400'}`} />
                   </div>
                   <h3 className="font-heading text-xl font-medium mb-2">{feature.title}</h3>
                   <p className="text-sm text-zinc-400 leading-relaxed">{feature.description}</p>
@@ -341,8 +341,8 @@ export default function Landing() {
                 transition={{ duration: 0.6, delay: index * 0.15 }}
                 className="text-center group"
               >
-                <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-white/5 border border-white/10 mb-6 group-hover:border-[#00E5FF]/30 group-hover:bg-[#00E5FF]/5 transition-all duration-300">
-                  <span className="font-heading text-2xl font-medium text-[#00E5FF]">{item.step}</span>
+                <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-white/5 border border-white/10 mb-6 group-hover:border-[#BCFF00]/30 group-hover:bg-[#BCFF00]/5 transition-all duration-300">
+                  <span className="font-heading text-2xl font-medium text-[#BCFF00]">{item.step}</span>
                 </div>
                 <h3 className="font-heading text-xl font-medium mb-3">{item.title}</h3>
                 <p className="text-sm text-zinc-400 leading-relaxed">{item.desc}</p>
@@ -369,7 +369,7 @@ export default function Landing() {
             </p>
             {!isAuthenticated && (
               <Link to="/register">
-                <Button size="lg" className="bg-[#00E5FF] text-black font-medium hover:bg-[#80F2FF] shadow-[0_0_30px_rgba(0,229,255,0.4)] hover:shadow-[0_0_40px_rgba(0,229,255,0.6)] transition-all px-10 h-14 text-base" data-testid="final-cta-btn">
+                <Button size="lg" className="bg-[#BCFF00] text-black font-medium hover:bg-[#D4FF4D] shadow-[0_0_30px_rgba(0,229,255,0.4)] hover:shadow-[0_0_40px_rgba(0,229,255,0.6)] transition-all px-10 h-14 text-base" data-testid="final-cta-btn">
                   Create Free Account
                   <ChevronRight className="w-5 h-5 ml-2" />
                 </Button>
@@ -383,7 +383,7 @@ export default function Landing() {
       <footer className="border-t border-white/10 py-8 px-6">
         <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-2">
-            <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-[#00E5FF] to-[#00B4D8] flex items-center justify-center">
+            <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-[#BCFF00] to-[#9FD900] flex items-center justify-center">
               <span className="font-heading font-semibold text-black text-xs">S</span>
             </div>
             <span className="font-heading font-medium text-white">Slabby</span>

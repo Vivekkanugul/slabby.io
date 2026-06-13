@@ -155,7 +155,7 @@ export default function Marketplace() {
           
           {isAuthenticated && (
             <Button
-              className="bg-[#00E5FF] text-black font-medium hover:bg-[#80F2FF] shadow-[0_0_15px_rgba(0,229,255,0.3)] transition-all"
+              className="bg-[#BCFF00] text-black font-medium hover:bg-[#D4FF4D] shadow-[0_0_15px_rgba(0,229,255,0.3)] transition-all"
               onClick={() => setShowCreate(true)}
               data-testid="list-card-btn"
             >
@@ -251,7 +251,7 @@ export default function Marketplace() {
                   List your first card to start trading!
                 </p>
                 <Button
-                  className="bg-[#00E5FF] text-black hover:bg-[#80F2FF]"
+                  className="bg-[#BCFF00] text-black hover:bg-[#D4FF4D]"
                   onClick={() => setShowCreate(true)}
                 >
                   <Plus className="w-4 h-4 mr-2" />
@@ -417,7 +417,7 @@ export default function Marketplace() {
                     Cancel
                   </Button>
                   <Button
-                    className="flex-1 bg-[#00E5FF] text-black hover:bg-[#80F2FF]"
+                    className="flex-1 bg-[#BCFF00] text-black hover:bg-[#D4FF4D]"
                     onClick={handleCreateCard}
                     disabled={submitting || !newCard.title.trim()}
                     data-testid="create-card-btn"
@@ -439,7 +439,7 @@ function CardItem({ card, isOwner, onPublish, getConditionLabel, getCategoryLabe
   
   return (
     <div 
-      className="bg-[#0A0A0E] border border-white/10 rounded-xl overflow-hidden hover:border-[#00E5FF]/30 transition-all group"
+      className="bg-[#0A0A0E] border border-white/10 rounded-xl overflow-hidden hover:border-[#BCFF00]/30 transition-all group"
       data-testid={`card-${card.id}`}
     >
       {/* Image */}
@@ -488,7 +488,7 @@ function CardItem({ card, isOwner, onPublish, getConditionLabel, getCategoryLabe
         
         {card.asking_price && (
           <div className="flex items-center gap-1 text-lg font-bold text-white mb-3">
-            <DollarSign className="w-4 h-4 text-[#00E5FF]" />
+            <DollarSign className="w-4 h-4 text-[#BCFF00]" />
             {card.asking_price.toLocaleString()}
           </div>
         )}
@@ -496,7 +496,7 @@ function CardItem({ card, isOwner, onPublish, getConditionLabel, getCategoryLabe
         {/* Actions */}
         {isOwner && isDraft ? (
           <Button
-            className="w-full bg-[#00E5FF] text-black hover:bg-[#80F2FF]"
+            className="w-full bg-[#BCFF00] text-black hover:bg-[#D4FF4D]"
             size="sm"
             onClick={onPublish}
             data-testid={`publish-${card.id}`}
