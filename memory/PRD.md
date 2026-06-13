@@ -1,152 +1,166 @@
-# CardWise - Advanced Collectible Card Analytics Platform PRD
+# Slabby - Trading & Razz Platform
+**Project Marvel - Event-Sourced Architecture**
 
-## Original Problem Statement
-Build the most analytical collectible card platform in the market with features no competitor has:
-- Portfolio tracking with risk metrics
-- Marketplace with buy/sell and AI-powered valuations
-- AI prediction analytics
-- What-If Scenario Simulator
-- Social Sentiment Heatmap
-- Grade Probability Calculator
-- Card Screener
-- Cross-Sport Arbitrage Finder
-- Smart Alerts with Context
-- Watchlist with custom alerts
+## Overview
+Slabby is a premier P2P trading and provably fair razz (raffle) platform for collectible cards. Built with event-sourced architecture for complete audit trails and transparency.
 
-## User Personas
-1. **Casual Collectors** - Track collections, browse marketplace
-2. **Serious Investors** - Advanced analytics, AI predictions, risk analysis
-3. **Professional Traders** - Arbitrage opportunities, buy/sell with profit margins
+## Core Features
 
-## Tech Stack
-- Frontend: React 19, Tailwind CSS, Shadcn/UI, Recharts
-- Backend: FastAPI, MongoDB, JWT
-- AI: OpenAI GPT-5.2 via Emergent integrations
-- External APIs: CardSight AI (7M+ card catalog)
-- Deployment: Emergent platform
+### 1. Authentication
+- JWT-based authentication
+- User registration with email/password
+- Profile management with display names
+- Token stored as `slabby_token` in localStorage
 
-## What's Been Implemented
+### 2. Wallet System
+- Digital wallet for each user
+- Deposit/withdraw functionality (MOCKED - Stripe integration pending)
+- Balance tracking: available, pending, escrow
+- Full transaction history
+- Event-sourced ledger
 
-### Core Features
-- [x] JWT authentication (register/login)
-- [x] Cards API with 13 mock cards (Basketball, Baseball, Football, Hockey)
-- [x] Portfolio management (add/remove, P&L tracking)
-- [x] Transaction history
-- [x] AI Predictions (mock + GPT-5.2)
-- [x] Market overview statistics
+### 3. Card Marketplace
+- List cards for sale with details:
+  - Title, player name, team, year, set
+  - Category (basketball, baseball, football, hockey, pokemon, other)
+  - Condition (raw, PSA 10/9/8, BGS 10/9.5)
+  - Asking price
+  - Images
+- Draft → Published workflow
+- Search and filter by category
+- Card status: draft, available, in_trade, in_razz, sold
 
-### CardSight AI Integration (March 23, 2026) - LATEST
-- [x] **Real Card Search** - Search 7M+ real cards from CardSight database
-- [x] **API Endpoint** - `/api/cards/search/cardsight?q={query}&limit={n}` 
-- [x] **Data Conversion** - CardSight results converted to CardBase format with simulated pricing
-- [x] **AI Research Terminal** - Shows both local and CardSight results with Globe icon
-- [x] **Trading Hub Integration** - CardSight search in Buy Cards tab
-- [x] **Full Analytics** - CardSight cards get same analytics (technicals, fundamentals, price targets)
-- [x] **Visual Distinction** - CardSight results show cyan styling and Globe icon
+### 4. P2P Trading
+- Multi-asset trade support (cards + cash)
+- Trade types: cards_only, cash_only, cards_and_cash, cash_for_cards
+- Trade workflow: pending → countered → accepted/rejected → in_escrow → completed
+- Escrow protection for both parties
 
-### Trading Hub (March 22, 2026)
-- [x] **Buy Cards Tab** - Browse all cards with AI Fair Market Value, Buy Target (80-90% FMV), Profit Potential
-- [x] **Sell Cards Tab** - List cards with AI Suggested Sell Range (95-105% FMV), volume data
-- [x] **Active Listings Tab** - View all active marketplace listings with FMV comparison
-- [x] **Expanded Card View** - FMV, Buy/Sell ranges, Confidence score, Profit Breakdown
-- [x] **Sell Modal** - Set price with real-time % of FMV indicator, quantity selector
-- [x] **Buy Confirmation** - Shows asking price vs FMV, potential profit calculation
-- [x] **Market Valuation API** - `/api/marketplace/valuations` with algorithmic FMV calculation
+### 5. Provably Fair Razz (Raffle)
+- Cryptographically verifiable drawings
+- Server seed hash published before draw
+- Formula: `Winner = SHA256(server_seed + client_seed) mod total_spots`
+- Full verification endpoint for completed razzes
+- Spot purchasing with wallet balance
+- Max spots per user limit
 
-### AI Research Terminal
-- [x] **Player Search** - Search local portfolio + CardSight database
-- [x] **Price Targets** - Bull/Base/Bear 12-month projections
-- [x] **Technical Analysis** - RSI, MACD, Stochastic, ADX, Support/Resistance levels
-- [x] **Fundamentals** - PSA Population, Scarcity Index, Liquidity Score
-- [x] **Player Stats** - Game-by-game performance (NBA/MLB/NFL/NHL)
-- [x] **Hold Projector** - Multi-timeframe value projections with probability distributions
+### 6. Admin Portal
+- Platform statistics dashboard
+- User management (suspend/unsuspend)
+- Event log viewer
+- Role-based access (admin, super_admin)
 
-### Advanced Analytics
-- [x] What-If Simulator (9 scenario types)
-- [x] Social Sentiment Heatmap
-- [x] Grade Probability Calculator
-- [x] Card Screener (replaced Stress Test)
-- [x] Arbitrage Finder
-- [x] Smart Alerts with Context
+## Technical Architecture
 
-### Watchlist
-- [x] Add/remove cards to watchlist
-- [x] Custom price alerts (high/low targets)
-- [x] Alert enable/disable
+### Backend (FastAPI)
+```
+/app/backend/
+├── server.py           # Main app with lifespan
+├── routes/
+│   ├── auth.py         # Authentication endpoints
+│   ├── cards.py        # Card CRUD
+│   ├── trades.py       # P2P trading
+│   ├── razz.py         # Razz (raffle) system
+│   ├── wallet.py       # Banking/payments
+│   └── admin.py        # Admin portal
+├── services/
+│   ├── event_store.py  # Append-only event log
+│   ├── user_service.py
+│   ├── card_service.py
+│   ├── trade_service.py
+│   ├── razz_service.py
+│   └── wallet_service.py
+└── models/
+    ├── events.py       # Base event schemas
+    ├── user.py
+    ├── card.py
+    ├── trade.py
+    ├── razz.py
+    ├── wallet.py
+    └── admin.py
+```
 
-### Pages
-- [x] Landing page, Auth (Login/Register)
-- [x] Trading Hub (Marketplace) with Buy/Sell/Listings
-- [x] Portfolio with holdings table, transactions, watchlist tab
-- [x] AI Research Terminal
-- [x] Analytics Hub
-- [x] Profile settings
+### Frontend (React)
+```
+/app/frontend/src/
+├── pages/
+│   ├── Landing.js      # Slabby hero page
+│   ├── Login.js
+│   ├── Register.js
+│   ├── Marketplace.js  # Card browse & listing
+│   ├── CardDetail.js
+│   ├── Trades.js       # P2P trade management
+│   ├── Razz.js         # Raffle browse & purchase
+│   └── Wallet.js       # Banking
+├── components/
+│   └── Layout/Navbar.js # Slabby navigation
+└── lib/api.js          # API client
+```
 
 ## API Endpoints
 
-### Core
-- `POST /api/auth/register`, `POST /api/auth/login`, `GET /api/auth/me`
-- `GET /api/cards`, `GET /api/cards/trending`, `GET /api/cards/{id}`, `GET /api/cards/{id}/price-history`
-- `GET /api/cards/search/cardsight` - **NEW** CardSight API search
-- `GET /api/marketplace/listings`, `POST /api/marketplace/list`, `POST /api/marketplace/buy`
-- `GET /api/marketplace/valuations`, `GET /api/marketplace/valuation/{card_id}`
-- `GET /api/portfolio`, `GET /api/portfolio/summary`, `POST /api/portfolio/add`, `DELETE /api/portfolio/{id}`
-- `GET /api/transactions`
-- `GET /api/predictions`, `GET /api/predictions/{id}`, `POST /api/predictions/analyze`
+### Auth
+- `POST /api/auth/register` - Create account
+- `POST /api/auth/login` - Login
+- `GET /api/auth/me` - Get current user
 
-### Analytics
-- `POST /api/analytics/what-if`, `GET /api/analytics/sentiment-heatmap`
-- `POST /api/analytics/grade-probability`, `GET /api/analytics/arbitrage`
-- `GET /api/analytics/smart-alerts`, `GET /api/analytics/portfolio-metrics`
+### Cards
+- `GET /api/cards` - Browse marketplace
+- `GET /api/cards/my-cards` - User's cards
+- `POST /api/cards` - Create card (draft)
+- `POST /api/cards/{id}/publish` - Publish to marketplace
 
-### Player Performance
-- `GET /api/players/{card_id}/performance`
-- `POST /api/projections/hold`
+### Trades
+- `POST /api/trades` - Create trade offer
+- `GET /api/trades` - User's trades
+- `POST /api/trades/{id}/accept` - Accept trade
+- `POST /api/trades/{id}/reject` - Reject trade
+- `POST /api/trades/{id}/counter` - Counter offer
 
-### Watchlist
-- `GET /api/watchlist`, `POST /api/watchlist`, `PUT /api/watchlist/{id}`, `DELETE /api/watchlist/{id}`
+### Razz
+- `POST /api/razz` - Create razz (draft)
+- `GET /api/razz` - Browse active razzes
+- `POST /api/razz/{id}/publish` - Activate razz
+- `POST /api/razz/{id}/purchase` - Buy spots
+- `POST /api/razz/{id}/draw` - Execute draw (host only)
+- `GET /api/razz/{id}/verify` - Verify fairness
 
-## Data Sources
-| Data Type | Source | Status |
-|-----------|--------|--------|
-| Card Catalog | CardSight AI API | LIVE (7M+ cards) |
-| Card Pricing | Simulated from catalog data | SIMULATED |
-| Player Performance | Mock engine per sport | MOCKED |
-| Market Valuations | Algorithmic calculation | MOCKED |
-| Social Sentiment | Mock data | MOCKED |
+### Wallet
+- `GET /api/wallet` - Get wallet
+- `POST /api/wallet/deposit` - Deposit funds (MOCKED)
+- `POST /api/wallet/withdraw` - Withdraw funds (MOCKED)
+- `GET /api/wallet/transactions` - Transaction history
 
-## 3rd Party Integrations
-1. **CardSight AI** - Card catalog search (API Key in backend/.env)
-2. **OpenAI GPT-5.2** - AI analysis via Emergent LLM Key
+## Design
+- Brand color: Orange `#FF6B00`
+- Dark theme: `#05050A` background
+- Slabby logo: Orange gradient "S" badge
+- Navigation: Marketplace, Trades, Razz, Wallet
 
-## Next Steps (Prioritized)
+## Status
 
-### P0 - High Priority
-- [ ] Replace mocked user/portfolio data with real MongoDB persistence
-- [ ] Resolve "Game Impact" chart replacement (user requested change)
+### Completed (P0)
+- [x] Event-sourced data architecture
+- [x] User authentication (JWT)
+- [x] Wallet system with transactions
+- [x] Card marketplace (CRUD + publish)
+- [x] P2P trade framework
+- [x] Provably fair razz engine
+- [x] Frontend with Slabby branding
 
-### P1 - Medium Priority
-- [ ] Real eBay API for accurate price history
-- [ ] Real sports stats API for player data  
-- [ ] Real social media sentiment API
-- [ ] Refactor server.py (2400+ lines) into /routes, /models, /services
+### Pending (P1)
+- [ ] Stripe Connect integration for real payments
+- [ ] eBay API for market data (user lacks credentials)
+- [ ] Real-time notifications (WebSocket)
 
-### P2 - Future Enhancements
-- [ ] Real PSA population reports
-- [ ] Fractional Card Ownership
-- [ ] Real-time WebSocket price updates
-- [ ] Email notifications for alerts
+### Future (P2)
+- [ ] Mobile-responsive design refinements
+- [ ] Advanced search filters
+- [ ] Trade history analytics
+- [ ] Razz statistics dashboard
 
-## Known Limitations
-- CardSight API provides catalog data only (no pricing) - prices are simulated
-- Player performance data is mocked, not connected to real sports APIs
-- Teams set for 2026 simulation (LeBron/Luka on Lakers, Trae on Wizards)
+## MOCKED Integrations
+⚠️ **Stripe Connect**: Wallet deposits/withdrawals are MOCKED. Balance updates are instant without real payment processing. Production deployment requires Stripe Connect integration.
 
 ## Test Credentials
-- Email: `debugtest@test.com` / Password: `password123`
-- Email: `fulltest8107@cardwise.com` / Password: `password123`
-
-## Notes
-- Dark fintech theme with cyan accent for AI features
-- GPT-5.2 integration active for AI analysis feature
-- CardSight integration adds real card discovery while keeping simulated analytics
+See `/app/memory/test_credentials.md`
