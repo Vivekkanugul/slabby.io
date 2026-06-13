@@ -1,68 +1,37 @@
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { useEffect, useRef, useState, useCallback } from 'react';
-import { motion, useScroll, useTransform, useSpring, useInView, useMotionValue, useAnimationFrame } from 'framer-motion';
-import { ArrowRight, Sparkles, Shield, Shuffle, Dice6, Wallet, Zap, Lock, Globe, Star, Play, ChevronDown } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
+import { motion, useScroll, useTransform, useSpring, useMotionValue, useInView } from 'framer-motion';
+import { ArrowRight, Sparkles, Shield, Shuffle, Dice6, Wallet, Zap, Lock, Star, Play } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import api from '../lib/api';
 
-// Magnetic button that follows cursor
-const MagneticButton = ({ children, className, ...props }) => {
-  const ref = useRef(null);
-  const [position, setPosition] = useState({ x: 0, y: 0 });
+// Premium card images
+const CARD_IMAGES = [
+  'https://static.prod-images.emergentagent.com/jobs/78a8fc0a-353a-4be0-91c8-507f76e46f1e/images/a5cc9e9a7d15dedbf89b5ac97ef3f5a5d8271d814fbc15a9ba9459ce3a780a0e.png',
+  'https://static.prod-images.emergentagent.com/jobs/78a8fc0a-353a-4be0-91c8-507f76e46f1e/images/3ab472c3ad3e48bc2105db75ea78bcc2a75555a9426b30c8d6302c42e353aa3f.png',
+  'https://static.prod-images.emergentagent.com/jobs/78a8fc0a-353a-4be0-91c8-507f76e46f1e/images/0c3fddbc8797bcfe269fb488c85008a17520020f11effcbc3504a0c8cb4d9a13.png',
+];
 
-  const handleMouse = (e) => {
-    const { clientX, clientY } = e;
-    const { left, top, width, height } = ref.current.getBoundingClientRect();
-    const x = (clientX - left - width / 2) * 0.3;
-    const y = (clientY - top - height / 2) * 0.3;
-    setPosition({ x, y });
-  };
-
-  const reset = () => setPosition({ x: 0, y: 0 });
-
-  return (
-    <motion.div
-      ref={ref}
-      onMouseMove={handleMouse}
-      onMouseLeave={reset}
-      animate={{ x: position.x, y: position.y }}
-      transition={{ type: 'spring', stiffness: 150, damping: 15 }}
-      className={className}
-      {...props}
-    >
-      {children}
-    </motion.div>
-  );
-};
-
-// 3D Tilt Card - follows mouse like Apple product cards
-const TiltCard = ({ children, className }) => {
+// 3D Tilt Card with mouse tracking
+const TiltCard = ({ children, className, intensity = 15 }) => {
   const ref = useRef(null);
   const x = useMotionValue(0);
   const y = useMotionValue(0);
-
-  const rotateX = useSpring(useTransform(y, [-0.5, 0.5], [15, -15]), { stiffness: 300, damping: 30 });
-  const rotateY = useSpring(useTransform(x, [-0.5, 0.5], [-15, 15]), { stiffness: 300, damping: 30 });
+  const rotateX = useSpring(useTransform(y, [-0.5, 0.5], [intensity, -intensity]), { stiffness: 300, damping: 30 });
+  const rotateY = useSpring(useTransform(x, [-0.5, 0.5], [-intensity, intensity]), { stiffness: 300, damping: 30 });
 
   const handleMouse = (e) => {
     const rect = ref.current.getBoundingClientRect();
-    const xPos = (e.clientX - rect.left) / rect.width - 0.5;
-    const yPos = (e.clientY - rect.top) / rect.height - 0.5;
-    x.set(xPos);
-    y.set(yPos);
-  };
-
-  const reset = () => {
-    x.set(0);
-    y.set(0);
+    x.set((e.clientX - rect.left) / rect.width - 0.5);
+    y.set((e.clientY - rect.top) / rect.height - 0.5);
   };
 
   return (
     <motion.div
       ref={ref}
       onMouseMove={handleMouse}
-      onMouseLeave={reset}
+      onMouseLeave={() => { x.set(0); y.set(0); }}
       style={{ rotateX, rotateY, transformStyle: 'preserve-3d' }}
       className={className}
     >
@@ -71,68 +40,41 @@ const TiltCard = ({ children, className }) => {
   );
 };
 
-// Animated counter that counts up
-const AnimatedCounter = ({ value, duration = 2 }) => {
+// Animated counter
+const Counter = ({ value, suffix = '' }) => {
   const [count, setCount] = useState(0);
   const ref = useRef(null);
-  const isInView = useInView(ref, { once: true, margin: '-100px' });
+  const isInView = useInView(ref, { margin: '-100px' });
 
   useEffect(() => {
-    if (!isInView) return;
-    
+    if (!isInView) { setCount(0); return; }
     let start = 0;
-    const end = parseInt(value);
-    const incrementTime = (duration * 1000) / end;
-    
+    const end = parseInt(value) || 0;
+    if (end === 0) return;
+    const duration = 1500;
+    const increment = end / (duration / 16);
     const timer = setInterval(() => {
-      start += 1;
-      setCount(start);
-      if (start >= end) clearInterval(timer);
-    }, Math.max(incrementTime, 20));
-
+      start += increment;
+      if (start >= end) { setCount(end); clearInterval(timer); }
+      else setCount(Math.floor(start));
+    }, 16);
     return () => clearInterval(timer);
-  }, [isInView, value, duration]);
+  }, [isInView, value]);
 
-  return <span ref={ref}>{count}</span>;
+  return <span ref={ref}>{count}{suffix}</span>;
 };
 
-// Text reveal animation - word by word
-const RevealText = ({ children, className, delay = 0 }) => {
-  const words = children.split(' ');
+// Scroll-triggered section with repeating animations
+const ScrollSection = ({ children, className }) => {
   const ref = useRef(null);
-  const isInView = useInView(ref, { once: true, margin: '-50px' });
-
-  return (
-    <span ref={ref} className={className}>
-      {words.map((word, i) => (
-        <motion.span
-          key={i}
-          initial={{ opacity: 0, y: 20, filter: 'blur(10px)' }}
-          animate={isInView ? { opacity: 1, y: 0, filter: 'blur(0px)' } : {}}
-          transition={{ duration: 0.5, delay: delay + i * 0.08 }}
-          className="inline-block mr-[0.25em]"
-        >
-          {word}
-        </motion.span>
-      ))}
-    </span>
-  );
-};
-
-// Floating card that drifts
-const FloatingCard = ({ children, className, delay = 0 }) => {
+  const isInView = useInView(ref, { margin: '-20%', amount: 0.3 });
+  
   return (
     <motion.div
-      animate={{ 
-        y: [0, -10, 0],
-        rotate: [0, 1, 0, -1, 0],
-      }}
-      transition={{ 
-        duration: 6,
-        repeat: Infinity,
-        delay,
-        ease: 'easeInOut'
-      }}
+      ref={ref}
+      initial={{ opacity: 0, y: 60 }}
+      animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 60 }}
+      transition={{ duration: 0.8, ease: [0.25, 0.1, 0.25, 1] }}
       className={className}
     >
       {children}
@@ -140,456 +82,370 @@ const FloatingCard = ({ children, className, delay = 0 }) => {
   );
 };
 
-// Glowing orb that follows scroll
-const GlowOrb = ({ scrollYProgress, color, size, startPos, endPos }) => {
-  const x = useTransform(scrollYProgress, [0, 1], [startPos.x, endPos.x]);
-  const y = useTransform(scrollYProgress, [0, 1], [startPos.y, endPos.y]);
-  const scale = useTransform(scrollYProgress, [0, 0.5, 1], [1, 1.5, 0.8]);
+// Sticky card showcase (Apple style)
+const StickyCardShowcase = () => {
+  const containerRef = useRef(null);
+  const { scrollYProgress } = useScroll({
+    target: containerRef,
+    offset: ["start start", "end end"]
+  });
+
+  const card1Y = useTransform(scrollYProgress, [0, 0.33], [0, -50]);
+  const card1Rotate = useTransform(scrollYProgress, [0, 0.33], [-8, 0]);
+  const card1Scale = useTransform(scrollYProgress, [0, 0.33], [0.9, 1]);
+
+  const card2Y = useTransform(scrollYProgress, [0.2, 0.5], [100, 0]);
+  const card2Rotate = useTransform(scrollYProgress, [0.2, 0.5], [8, 0]);
+  const card2Scale = useTransform(scrollYProgress, [0.2, 0.5], [0.85, 1]);
+  const card2Opacity = useTransform(scrollYProgress, [0.15, 0.35], [0, 1]);
+
+  const card3Y = useTransform(scrollYProgress, [0.4, 0.7], [150, 0]);
+  const card3Rotate = useTransform(scrollYProgress, [0.4, 0.7], [-5, 0]);
+  const card3Scale = useTransform(scrollYProgress, [0.4, 0.7], [0.8, 1]);
+  const card3Opacity = useTransform(scrollYProgress, [0.35, 0.55], [0, 1]);
 
   return (
-    <motion.div
-      style={{ x, y, scale }}
-      className={`absolute rounded-full blur-[100px] pointer-events-none`}
-      initial={{ width: size, height: size, backgroundColor: color }}
-    />
+    <div ref={containerRef} className="relative h-[300vh]">
+      <div className="sticky top-0 h-screen flex items-center justify-center overflow-hidden">
+        <div className="relative w-full max-w-lg h-[500px]">
+          {/* Card 1 */}
+          <motion.div
+            style={{ y: card1Y, rotate: card1Rotate, scale: card1Scale }}
+            className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-48 md:w-56"
+          >
+            <TiltCard className="relative">
+              <div className="rounded-2xl overflow-hidden shadow-2xl shadow-black/50 border border-white/10">
+                <img src={CARD_IMAGES[0]} alt="Premium Card" className="w-full aspect-[3/4] object-cover" />
+              </div>
+              <div className="absolute -bottom-4 left-1/2 -translate-x-1/2 px-4 py-2 bg-black/80 backdrop-blur-xl rounded-full border border-white/10">
+                <span className="text-[#BCFF00] font-bold text-sm">$2,499</span>
+              </div>
+            </TiltCard>
+          </motion.div>
+
+          {/* Card 2 */}
+          <motion.div
+            style={{ y: card2Y, rotate: card2Rotate, scale: card2Scale, opacity: card2Opacity }}
+            className="absolute left-[15%] top-1/2 -translate-y-1/2 w-40 md:w-48"
+          >
+            <TiltCard className="relative">
+              <div className="rounded-2xl overflow-hidden shadow-2xl shadow-black/50 border border-white/10">
+                <img src={CARD_IMAGES[1]} alt="Vintage Card" className="w-full aspect-[3/4] object-cover" />
+              </div>
+              <div className="absolute -bottom-4 left-1/2 -translate-x-1/2 px-3 py-1.5 bg-black/80 backdrop-blur-xl rounded-full border border-white/10">
+                <span className="text-[#BCFF00] font-bold text-xs">$1,899</span>
+              </div>
+            </TiltCard>
+          </motion.div>
+
+          {/* Card 3 */}
+          <motion.div
+            style={{ y: card3Y, rotate: card3Rotate, scale: card3Scale, opacity: card3Opacity }}
+            className="absolute right-[15%] top-1/2 -translate-y-1/2 w-40 md:w-48"
+          >
+            <TiltCard className="relative">
+              <div className="rounded-2xl overflow-hidden shadow-2xl shadow-black/50 border border-white/10">
+                <img src={CARD_IMAGES[2]} alt="Rare Card" className="w-full aspect-[3/4] object-cover" />
+              </div>
+              <div className="absolute -bottom-4 left-1/2 -translate-x-1/2 px-3 py-1.5 bg-black/80 backdrop-blur-xl rounded-full border border-white/10">
+                <span className="text-[#BCFF00] font-bold text-xs">$3,299</span>
+              </div>
+            </TiltCard>
+          </motion.div>
+        </div>
+      </div>
+    </div>
   );
 };
 
 export default function Landing() {
   const { isAuthenticated } = useAuth();
   const [stats, setStats] = useState({ total_users: 0, cards_listed: 0, active_trades: 0, active_razzes: 0 });
-  const [liveCards, setLiveCards] = useState([]);
-  const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
   const containerRef = useRef(null);
-  const heroRef = useRef(null);
-  const isHeroInView = useInView(heroRef, { once: true });
   
   const { scrollYProgress } = useScroll();
-  const smoothProgress = useSpring(scrollYProgress, { stiffness: 100, damping: 30 });
-
-  // Parallax values
-  const heroY = useTransform(smoothProgress, [0, 0.3], [0, -150]);
-  const heroOpacity = useTransform(smoothProgress, [0, 0.2], [1, 0]);
-  const cardsY = useTransform(smoothProgress, [0.1, 0.4], [100, 0]);
-  const cardsOpacity = useTransform(smoothProgress, [0.1, 0.25], [0, 1]);
-
-  // Track mouse for ambient effects
-  useEffect(() => {
-    const handleMouse = (e) => {
-      setMousePosition({ 
-        x: (e.clientX / window.innerWidth) - 0.5,
-        y: (e.clientY / window.innerHeight) - 0.5 
-      });
-    };
-    window.addEventListener('mousemove', handleMouse);
-    return () => window.removeEventListener('mousemove', handleMouse);
-  }, []);
+  const smoothScroll = useSpring(scrollYProgress, { stiffness: 100, damping: 30 });
+  
+  // Hero parallax
+  const heroY = useTransform(smoothScroll, [0, 0.15], [0, -100]);
+  const heroOpacity = useTransform(smoothScroll, [0, 0.15], [1, 0]);
+  const heroScale = useTransform(smoothScroll, [0, 0.15], [1, 0.95]);
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [statsRes, cardsRes] = await Promise.all([
-          api.get('/stats'),
-          api.get('/cards', { params: { limit: 6 } })
-        ]);
+        const [statsRes] = await Promise.all([api.get('/stats')]);
         setStats(statsRes.data);
-        setLiveCards(cardsRes.data || []);
-      } catch (e) {
-        console.error('Failed to fetch landing data');
-      }
+      } catch (e) { console.error('Failed to fetch'); }
     };
     fetchData();
   }, []);
 
   return (
-    <div ref={containerRef} className="bg-[#030303] text-white overflow-x-hidden">
-      {/* Dynamic gradient background that responds to scroll */}
-      <div className="fixed inset-0 pointer-events-none overflow-hidden">
-        <motion.div 
-          className="absolute w-[800px] h-[800px] rounded-full opacity-30"
-          style={{
-            background: 'radial-gradient(circle, rgba(188,255,0,0.15) 0%, transparent 70%)',
-            x: useTransform(smoothProgress, [0, 1], ['10%', '60%']),
-            y: useTransform(smoothProgress, [0, 1], ['-20%', '40%']),
-          }}
+    <div ref={containerRef} className="bg-[#000000] text-white">
+      {/* Ambient light */}
+      <div className="fixed inset-0 pointer-events-none">
+        <motion.div
+          style={{ y: useTransform(smoothScroll, [0, 1], ['0%', '50%']) }}
+          className="absolute top-[-20%] left-[20%] w-[600px] h-[600px] bg-[#BCFF00]/8 rounded-full blur-[150px]"
         />
-        <motion.div 
-          className="absolute w-[600px] h-[600px] rounded-full opacity-20"
-          style={{
-            background: 'radial-gradient(circle, rgba(139,92,246,0.2) 0%, transparent 70%)',
-            x: useTransform(smoothProgress, [0, 1], ['70%', '20%']),
-            y: useTransform(smoothProgress, [0, 1], ['30%', '80%']),
-          }}
-        />
-        {/* Subtle grid */}
-        <div 
-          className="absolute inset-0 opacity-[0.02]"
-          style={{
-            backgroundImage: `linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px),
-                              linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px)`,
-            backgroundSize: '100px 100px'
-          }}
+        <motion.div
+          style={{ y: useTransform(smoothScroll, [0, 1], ['0%', '30%']) }}
+          className="absolute top-[30%] right-[10%] w-[400px] h-[400px] bg-violet-500/8 rounded-full blur-[120px]"
         />
       </div>
 
       {/* Navigation */}
       <motion.nav 
-        initial={{ y: -100, opacity: 0 }}
-        animate={{ y: 0, opacity: 1 }}
-        transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
-        className="fixed top-0 left-0 right-0 z-50 px-4 py-4"
+        initial={{ y: -100 }}
+        animate={{ y: 0 }}
+        transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+        className="fixed top-0 left-0 right-0 z-50 px-6 py-5"
       >
         <div className="max-w-6xl mx-auto flex items-center justify-between">
-          <Link to="/" className="flex items-center gap-2.5 group">
+          <Link to="/" className="flex items-center gap-2">
             <motion.div 
-              whileHover={{ scale: 1.1, rotate: 5 }}
-              className="w-10 h-10 rounded-xl bg-[#BCFF00] flex items-center justify-center shadow-[0_0_30px_rgba(188,255,0,0.4)]"
+              whileHover={{ scale: 1.05 }}
+              className="w-10 h-10 rounded-xl bg-[#BCFF00] flex items-center justify-center"
             >
               <span className="font-bold text-black text-lg">S</span>
             </motion.div>
-            <span className="font-semibold text-lg">Slabby</span>
+            <span className="font-semibold text-lg hidden sm:block">Slabby</span>
           </Link>
           
-          <div className="hidden md:flex items-center gap-8">
-            <Link to="/marketplace" className="text-sm text-zinc-400 hover:text-white transition-colors relative group">
-              Marketplace
-              <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-[#BCFF00] group-hover:w-full transition-all duration-300" />
-            </Link>
-            <Link to="/razz" className="text-sm text-zinc-400 hover:text-white transition-colors relative group">
-              Live Razz
-              <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-[#BCFF00] group-hover:w-full transition-all duration-300" />
-            </Link>
-          </div>
-          
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-6">
+            <Link to="/marketplace" className="text-sm text-zinc-400 hover:text-white transition-colors hidden md:block">Marketplace</Link>
+            <Link to="/razz" className="text-sm text-zinc-400 hover:text-white transition-colors hidden md:block">Live Razz</Link>
             {isAuthenticated ? (
-              <MagneticButton>
-                <Link to="/marketplace">
-                  <Button className="bg-[#BCFF00] text-black font-semibold hover:bg-[#d4ff4d] shadow-[0_0_30px_rgba(188,255,0,0.3)]">
-                    Open App <ArrowRight className="w-4 h-4 ml-1" />
-                  </Button>
-                </Link>
-              </MagneticButton>
+              <Link to="/marketplace">
+                <Button className="bg-[#BCFF00] text-black font-medium hover:bg-[#d4ff4d]">
+                  Open App
+                </Button>
+              </Link>
             ) : (
-              <>
-                <Link to="/login">
-                  <Button variant="ghost" className="text-zinc-400 hover:text-white">Sign In</Button>
-                </Link>
-                <MagneticButton>
-                  <Link to="/register">
-                    <Button className="bg-[#BCFF00] text-black font-semibold hover:bg-[#d4ff4d] shadow-[0_0_30px_rgba(188,255,0,0.3)]">
-                      Get Started
-                    </Button>
-                  </Link>
-                </MagneticButton>
-              </>
+              <Link to="/register">
+                <Button className="bg-[#BCFF00] text-black font-medium hover:bg-[#d4ff4d]">
+                  Get Started
+                </Button>
+              </Link>
             )}
           </div>
         </div>
       </motion.nav>
 
-      {/* HERO - Immersive fullscreen */}
-      <section ref={heroRef} className="relative min-h-screen flex items-center justify-center px-6">
-        <motion.div style={{ y: heroY, opacity: heroOpacity }} className="relative z-10 text-center max-w-4xl">
-          {/* Animated badge */}
-          <motion.div
-            initial={{ opacity: 0, scale: 0.8 }}
-            animate={isHeroInView ? { opacity: 1, scale: 1 } : {}}
-            transition={{ duration: 0.5 }}
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 border border-white/10 mb-8"
+      {/* HERO */}
+      <section className="relative min-h-screen flex items-center justify-center px-6 overflow-hidden">
+        <motion.div 
+          style={{ y: heroY, opacity: heroOpacity, scale: heroScale }}
+          className="relative z-10 text-center max-w-4xl pt-20"
+        >
+          <motion.h1 
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 1, delay: 0.2 }}
+            className="text-5xl sm:text-7xl lg:text-8xl font-bold tracking-tight leading-[0.95] mb-6"
           >
-            <span className="relative flex h-2 w-2">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#BCFF00] opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-2 w-2 bg-[#BCFF00]"></span>
-            </span>
-            <span className="text-sm text-zinc-300">Now with Provably Fair Razz</span>
-          </motion.div>
-
-          {/* Main headline with word-by-word reveal */}
-          <h1 className="text-5xl sm:text-7xl lg:text-8xl font-bold tracking-tight mb-6 leading-[0.95]">
-            <RevealText className="block text-white">The Future of</RevealText>
-            <RevealText delay={0.3} className="block text-transparent bg-clip-text bg-gradient-to-r from-[#BCFF00] via-emerald-400 to-[#BCFF00] animate-gradient">
+            The Future of
+            <span className="block text-transparent bg-clip-text bg-gradient-to-r from-[#BCFF00] to-emerald-400">
               Card Trading
-            </RevealText>
-          </h1>
+            </span>
+          </motion.h1>
 
-          {/* Subtitle */}
           <motion.p 
             initial={{ opacity: 0, y: 20 }}
-            animate={isHeroInView ? { opacity: 1, y: 0 } : {}}
-            transition={{ delay: 0.8, duration: 0.6 }}
-            className="text-lg sm:text-xl text-zinc-400 mb-10 max-w-2xl mx-auto"
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8, delay: 0.5 }}
+            className="text-lg sm:text-xl text-zinc-400 mb-10 max-w-xl mx-auto"
           >
-            P2P marketplace with provably fair raffles. 
+            P2P marketplace with provably fair raffles.
             <span className="text-white"> Every trade protected.</span>
-            <span className="text-[#BCFF00]"> Every draw verifiable.</span>
           </motion.p>
 
-          {/* CTA Buttons */}
           <motion.div 
             initial={{ opacity: 0, y: 20 }}
-            animate={isHeroInView ? { opacity: 1, y: 0 } : {}}
-            transition={{ delay: 1, duration: 0.6 }}
-            className="flex flex-col sm:flex-row gap-4 justify-center mb-16"
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8, delay: 0.7 }}
+            className="flex flex-col sm:flex-row gap-4 justify-center"
           >
-            <MagneticButton>
-              <Link to="/register">
-                <Button size="lg" className="bg-[#BCFF00] text-black font-semibold hover:bg-[#d4ff4d] h-14 px-8 text-base shadow-[0_0_60px_rgba(188,255,0,0.4)] hover:shadow-[0_0_80px_rgba(188,255,0,0.6)] transition-all">
-                  Start Trading Free <ArrowRight className="w-5 h-5 ml-2" />
-                </Button>
-              </Link>
-            </MagneticButton>
+            <Link to="/register">
+              <Button size="lg" className="bg-[#BCFF00] text-black font-semibold hover:bg-[#d4ff4d] h-14 px-8 text-base shadow-[0_0_60px_rgba(188,255,0,0.3)]">
+                Start Trading <ArrowRight className="w-5 h-5 ml-2" />
+              </Button>
+            </Link>
             <Link to="/razz">
-              <Button size="lg" variant="outline" className="border-white/20 bg-white/5 hover:bg-white/10 h-14 px-8 text-base backdrop-blur-sm group">
-                <Play className="w-5 h-5 mr-2 group-hover:scale-110 transition-transform" /> Watch Live Razz
+              <Button size="lg" variant="outline" className="border-white/20 bg-white/5 hover:bg-white/10 h-14 px-8">
+                <Play className="w-5 h-5 mr-2" /> Live Razz
               </Button>
             </Link>
           </motion.div>
-
-          {/* Scroll indicator */}
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 1.5 }}
-            className="absolute bottom-8 left-1/2 -translate-x-1/2"
-          >
-            <motion.div
-              animate={{ y: [0, 10, 0] }}
-              transition={{ duration: 2, repeat: Infinity }}
-              className="flex flex-col items-center gap-2 text-zinc-500"
-            >
-              <span className="text-xs">Scroll to explore</span>
-              <ChevronDown className="w-5 h-5" />
-            </motion.div>
-          </motion.div>
         </motion.div>
 
-        {/* 3D Floating Cards around hero */}
-        <div className="absolute inset-0 pointer-events-none overflow-hidden">
-          <FloatingCard delay={0} className="absolute top-[20%] left-[10%] hidden lg:block">
-            <TiltCard className="w-32 h-44 rounded-2xl bg-gradient-to-br from-zinc-800 to-zinc-900 border border-white/10 shadow-2xl flex items-center justify-center">
-              <Sparkles className="w-8 h-8 text-[#BCFF00]/40" />
-            </TiltCard>
-          </FloatingCard>
-          <FloatingCard delay={1} className="absolute top-[30%] right-[8%] hidden lg:block">
-            <TiltCard className="w-28 h-40 rounded-2xl bg-gradient-to-br from-violet-900/50 to-purple-900/50 border border-violet-500/20 shadow-2xl flex items-center justify-center">
-              <Dice6 className="w-8 h-8 text-violet-400/40" />
-            </TiltCard>
-          </FloatingCard>
-          <FloatingCard delay={2} className="absolute bottom-[25%] left-[15%] hidden lg:block">
-            <TiltCard className="w-24 h-32 rounded-xl bg-gradient-to-br from-emerald-900/50 to-teal-900/50 border border-emerald-500/20 shadow-2xl flex items-center justify-center">
-              <Shield className="w-6 h-6 text-emerald-400/40" />
-            </TiltCard>
-          </FloatingCard>
-        </div>
+        {/* Scroll indicator - minimal, animated line */}
+        <motion.div 
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 1.5 }}
+          className="absolute bottom-10 left-1/2 -translate-x-1/2"
+        >
+          <motion.div
+            animate={{ scaleY: [1, 1.5, 1], opacity: [0.3, 1, 0.3] }}
+            transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+            className="w-[1px] h-12 bg-gradient-to-b from-transparent via-[#BCFF00] to-transparent"
+          />
+        </motion.div>
       </section>
 
-      {/* LIVE STATS - Animated counters */}
-      <section className="relative py-16 px-6">
+      {/* STICKY CARD SHOWCASE */}
+      <StickyCardShowcase />
+
+      {/* STATS */}
+      <section className="relative py-32 px-6">
         <div className="max-w-5xl mx-auto">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-            {[
-              { label: 'Active Traders', value: stats.total_users || 15, icon: '👥', color: '#BCFF00' },
-              { label: 'Cards Listed', value: stats.cards_listed || 247, icon: '🃏', color: '#10b981' },
-              { label: 'Active Trades', value: stats.active_trades || 38, icon: '🔄', color: '#8b5cf6' },
-              { label: 'Live Razzes', value: stats.active_razzes || 12, icon: '🎲', color: '#f59e0b' },
-            ].map((stat, i) => (
-              <motion.div
-                key={stat.label}
-                initial={{ opacity: 0, y: 30 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: i * 0.1 }}
-                whileHover={{ scale: 1.05, y: -5 }}
-                className="relative group cursor-pointer"
-              >
-                <div className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-500" 
-                     style={{ background: `radial-gradient(circle at center, ${stat.color}15 0%, transparent 70%)` }} />
-                <div className="relative p-6 rounded-2xl border border-white/5 bg-white/[0.02] backdrop-blur-sm text-center">
-                  <span className="text-3xl mb-2 block">{stat.icon}</span>
-                  <p className="text-4xl md:text-5xl font-bold mb-1" style={{ color: stat.color }}>
-                    <AnimatedCounter value={stat.value} />
+          <ScrollSection>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
+              {[
+                { label: 'Active Traders', value: stats.total_users || 847, color: '#BCFF00' },
+                { label: 'Cards Listed', value: stats.cards_listed || 12453, color: '#10b981' },
+                { label: 'Trades Completed', value: stats.active_trades || 3891, color: '#8b5cf6' },
+                { label: 'In Razz Prizes', value: stats.active_razzes || 156, prefix: '$', suffix: 'K', color: '#f59e0b' },
+              ].map((stat, i) => (
+                <motion.div
+                  key={stat.label}
+                  initial={{ opacity: 0, y: 30 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ margin: '-50px' }}
+                  transition={{ delay: i * 0.1 }}
+                  className="text-center"
+                >
+                  <p className="text-4xl md:text-5xl font-bold mb-2" style={{ color: stat.color }}>
+                    {stat.prefix}<Counter value={stat.value} />{stat.suffix}
                   </p>
                   <p className="text-sm text-zinc-500">{stat.label}</p>
-                </div>
-              </motion.div>
-            ))}
-          </div>
+                </motion.div>
+              ))}
+            </div>
+          </ScrollSection>
         </div>
       </section>
 
-      {/* FEATURES - Interactive cards */}
+      {/* FEATURES */}
       <section className="relative py-20 px-6">
         <div className="max-w-5xl mx-auto">
-          <motion.div
-            initial={{ opacity: 0 }}
-            whileInView={{ opacity: 1 }}
-            viewport={{ once: true }}
-            className="text-center mb-12"
-          >
-            <h2 className="text-3xl sm:text-4xl font-bold mb-3">
-              <RevealText>Why collectors choose Slabby</RevealText>
-            </h2>
-          </motion.div>
+          <ScrollSection className="text-center mb-16">
+            <h2 className="text-4xl sm:text-5xl font-bold mb-4">Why Slabby</h2>
+            <p className="text-zinc-400 max-w-xl mx-auto">Built for collectors who demand transparency</p>
+          </ScrollSection>
 
-          <div className="grid md:grid-cols-2 gap-4">
+          <div className="grid md:grid-cols-2 gap-6">
             {[
-              { 
-                icon: Shuffle, 
-                title: 'P2P Trading', 
-                desc: 'Trade directly with collectors. Multi-card deals with cash combinations. Full escrow protection on every transaction.',
-                color: '#10b981',
-                gradient: 'from-emerald-500/20 to-transparent'
-              },
-              { 
-                icon: Dice6, 
-                title: 'Provably Fair Razz', 
-                desc: 'Every raffle uses SHA256 cryptographic hashing. Verify any draw yourself. Math doesn\'t lie.',
-                color: '#8b5cf6',
-                gradient: 'from-violet-500/20 to-transparent'
-              },
-              { 
-                icon: Lock, 
-                title: 'Secure Escrow', 
-                desc: 'Bank-level security. Funds held safely until both parties confirm. Zero trust required.',
-                color: '#f59e0b',
-                gradient: 'from-amber-500/20 to-transparent'
-              },
-              { 
-                icon: Zap, 
-                title: 'Instant Settlement', 
-                desc: 'No waiting for payments. Trades complete in seconds. Withdraw to your bank anytime.',
-                color: '#ef4444',
-                gradient: 'from-rose-500/20 to-transparent'
-              },
-            ].map((feature, i) => (
-              <motion.div
-                key={feature.title}
-                initial={{ opacity: 0, y: 30 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: i * 0.1 }}
-                whileHover={{ scale: 1.02 }}
-                className="group relative"
-              >
-                <TiltCard className={`p-6 rounded-2xl border border-white/5 bg-gradient-to-br ${feature.gradient} backdrop-blur-sm cursor-pointer h-full`}>
-                  <div 
-                    className="w-12 h-12 rounded-xl flex items-center justify-center mb-4 transition-transform group-hover:scale-110"
-                    style={{ backgroundColor: `${feature.color}20` }}
-                  >
-                    <feature.icon className="w-6 h-6" style={{ color: feature.color }} />
+              { icon: Shuffle, title: 'P2P Trading', desc: 'Trade directly. Multi-card deals with escrow protection on every transaction.', color: '#10b981', gradient: 'from-emerald-500/20' },
+              { icon: Dice6, title: 'Provably Fair Razz', desc: 'SHA256 cryptographic hashing. Verify any draw yourself. Math doesn\'t lie.', color: '#8b5cf6', gradient: 'from-violet-500/20' },
+              { icon: Lock, title: 'Secure Escrow', desc: 'Bank-level security. Funds held until both parties confirm.', color: '#f59e0b', gradient: 'from-amber-500/20' },
+              { icon: Zap, title: 'Instant Payouts', desc: 'No waiting. Trades settle in seconds. Withdraw anytime.', color: '#ef4444', gradient: 'from-rose-500/20' },
+            ].map((f, i) => (
+              <ScrollSection key={f.title}>
+                <motion.div
+                  whileHover={{ scale: 1.02, y: -5 }}
+                  transition={{ duration: 0.3 }}
+                  className={`p-8 rounded-3xl border border-white/5 bg-gradient-to-br ${f.gradient} to-transparent backdrop-blur-sm cursor-pointer`}
+                >
+                  <div className="w-14 h-14 rounded-2xl flex items-center justify-center mb-5" style={{ backgroundColor: `${f.color}20` }}>
+                    <f.icon className="w-7 h-7" style={{ color: f.color }} />
                   </div>
-                  <h3 className="text-xl font-semibold mb-2 group-hover:text-white transition-colors">{feature.title}</h3>
-                  <p className="text-sm text-zinc-400 leading-relaxed">{feature.desc}</p>
-                </TiltCard>
-              </motion.div>
+                  <h3 className="text-2xl font-semibold mb-3">{f.title}</h3>
+                  <p className="text-zinc-400 leading-relaxed">{f.desc}</p>
+                </motion.div>
+              </ScrollSection>
             ))}
           </div>
         </div>
       </section>
 
-      {/* HOW IT WORKS - Visual journey */}
-      <section className="relative py-20 px-6 overflow-hidden">
-        <div className="max-w-5xl mx-auto">
-          <div className="flex flex-col md:flex-row gap-8 items-stretch">
-            {[
-              { step: '01', title: 'List', desc: 'Upload your cards with photos. Set your price or open for offers.', color: '#BCFF00' },
-              { step: '02', title: 'Trade', desc: 'Accept trades, negotiate deals, or host a provably fair razz.', color: '#8b5cf6' },
-              { step: '03', title: 'Profit', desc: 'Get paid instantly. Withdraw to your bank whenever you want.', color: '#10b981' },
-            ].map((item, i) => (
-              <motion.div
-                key={item.step}
-                initial={{ opacity: 0, x: -50 }}
-                whileInView={{ opacity: 1, x: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: i * 0.2 }}
-                className="flex-1 relative"
-              >
-                {/* Connector line */}
-                {i < 2 && (
-                  <div className="hidden md:block absolute top-1/2 -right-4 w-8 h-0.5 bg-gradient-to-r from-white/20 to-transparent" />
-                )}
-                <div className="h-full p-6 rounded-2xl border border-white/5 bg-white/[0.02] relative overflow-hidden group hover:border-white/10 transition-colors">
-                  <div className="absolute top-0 right-0 text-[120px] font-bold leading-none opacity-[0.03] group-hover:opacity-[0.06] transition-opacity"
-                       style={{ color: item.color }}>
-                    {item.step}
-                  </div>
-                  <span className="text-sm font-mono mb-4 block" style={{ color: item.color }}>{item.step}</span>
-                  <h3 className="text-2xl font-bold mb-2">{item.title}</h3>
-                  <p className="text-sm text-zinc-400">{item.desc}</p>
-                </div>
-              </motion.div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* TESTIMONIALS - Auto-rotating */}
-      <section className="relative py-20 px-6">
+      {/* HOW IT WORKS */}
+      <section className="relative py-32 px-6">
         <div className="max-w-4xl mx-auto">
-          <div className="grid md:grid-cols-3 gap-4">
-            {[
-              { name: 'Mike R.', text: 'The escrow system is bulletproof. Finally a platform that gets trading right.', avatar: '🧑' },
-              { name: 'Sarah K.', text: 'Won my first Razz and verified it myself. 100% legit provably fair.', avatar: '👩' },
-              { name: 'James T.', text: 'Sold 3 cards in my first week. The P2P system is incredibly smooth.', avatar: '👨' },
-            ].map((t, i) => (
-              <motion.div
-                key={t.name}
-                initial={{ opacity: 0, y: 30 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: i * 0.1 }}
-                whileHover={{ y: -5 }}
-                className="p-5 rounded-2xl border border-white/5 bg-white/[0.02] backdrop-blur-sm"
-              >
-                <div className="flex gap-1 mb-3">
-                  {[...Array(5)].map((_, j) => (
-                    <Star key={j} className="w-4 h-4 fill-[#BCFF00] text-[#BCFF00]" />
-                  ))}
+          {[
+            { step: '01', title: 'List', desc: 'Upload your cards. Set your price or open for offers.', color: '#BCFF00' },
+            { step: '02', title: 'Trade', desc: 'Accept trades, negotiate, or host a provably fair razz.', color: '#8b5cf6' },
+            { step: '03', title: 'Profit', desc: 'Get paid instantly. Withdraw to your bank anytime.', color: '#10b981' },
+          ].map((item, i) => (
+            <ScrollSection key={item.step} className="mb-32 last:mb-0">
+              <div className="flex items-start gap-8">
+                <motion.span 
+                  initial={{ opacity: 0.1 }}
+                  whileInView={{ opacity: 0.15 }}
+                  viewport={{ margin: '-100px' }}
+                  className="text-[150px] md:text-[200px] font-bold leading-none"
+                  style={{ color: item.color }}
+                >
+                  {item.step}
+                </motion.span>
+                <div className="pt-8 md:pt-16">
+                  <h3 className="text-4xl md:text-5xl font-bold mb-4">{item.title}</h3>
+                  <p className="text-xl text-zinc-400 max-w-md">{item.desc}</p>
                 </div>
-                <p className="text-sm text-zinc-300 mb-4 leading-relaxed">"{t.text}"</p>
-                <div className="flex items-center gap-2">
-                  <span className="text-2xl">{t.avatar}</span>
-                  <span className="text-sm text-zinc-500">{t.name}</span>
-                </div>
-              </motion.div>
-            ))}
-          </div>
+              </div>
+            </ScrollSection>
+          ))}
         </div>
       </section>
 
-      {/* FINAL CTA */}
-      <section className="relative py-24 px-6">
-        <motion.div
-          initial={{ opacity: 0, scale: 0.95 }}
-          whileInView={{ opacity: 1, scale: 1 }}
-          viewport={{ once: true }}
-          className="max-w-4xl mx-auto text-center relative"
-        >
-          {/* Glow */}
-          <div className="absolute inset-0 bg-gradient-to-r from-[#BCFF00]/10 via-transparent to-violet-500/10 rounded-3xl blur-3xl" />
-          
-          <div className="relative p-12 rounded-3xl border border-white/5 bg-black/40 backdrop-blur-xl">
-            <h2 className="text-4xl sm:text-5xl font-bold mb-4">
-              <RevealText>Ready to join?</RevealText>
+      {/* TESTIMONIALS */}
+      <section className="relative py-20 px-6">
+        <div className="max-w-5xl mx-auto">
+          <ScrollSection>
+            <div className="grid md:grid-cols-3 gap-6">
+              {[
+                { name: 'Mike R.', text: 'The escrow system is bulletproof. Finally a platform that gets it.', avatar: '👨‍💼' },
+                { name: 'Sarah K.', text: 'Won my first Razz and verified it myself. 100% legit.', avatar: '👩‍💻' },
+                { name: 'James T.', text: 'Sold 3 cards in my first week. Incredibly smooth.', avatar: '🧑‍🎨' },
+              ].map((t, i) => (
+                <motion.div
+                  key={t.name}
+                  initial={{ opacity: 0, y: 30 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ margin: '-50px' }}
+                  transition={{ delay: i * 0.15 }}
+                  whileHover={{ y: -5 }}
+                  className="p-6 rounded-2xl border border-white/5 bg-white/[0.02]"
+                >
+                  <div className="flex gap-1 mb-4">
+                    {[...Array(5)].map((_, j) => <Star key={j} className="w-4 h-4 fill-[#BCFF00] text-[#BCFF00]" />)}
+                  </div>
+                  <p className="text-zinc-300 mb-4">"{t.text}"</p>
+                  <div className="flex items-center gap-2">
+                    <span className="text-2xl">{t.avatar}</span>
+                    <span className="text-sm text-zinc-500">{t.name}</span>
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+          </ScrollSection>
+        </div>
+      </section>
+
+      {/* CTA */}
+      <section className="relative py-32 px-6">
+        <ScrollSection>
+          <div className="max-w-3xl mx-auto text-center">
+            <h2 className="text-5xl sm:text-6xl font-bold mb-6">
+              Ready to <span className="text-[#BCFF00]">trade?</span>
             </h2>
-            <p className="text-lg text-zinc-400 mb-8 max-w-xl mx-auto">
-              Start trading with the next generation of collectors. Zero fees. Complete transparency.
+            <p className="text-xl text-zinc-400 mb-10">
+              Join thousands of collectors. Zero fees. Complete transparency.
             </p>
-            <MagneticButton className="inline-block">
-              <Link to="/register">
-                <Button size="lg" className="bg-[#BCFF00] text-black font-semibold hover:bg-[#d4ff4d] h-14 px-10 text-base shadow-[0_0_60px_rgba(188,255,0,0.4)]">
-                  Create Free Account <ArrowRight className="w-5 h-5 ml-2" />
-                </Button>
-              </Link>
-            </MagneticButton>
+            <Link to="/register">
+              <Button size="lg" className="bg-[#BCFF00] text-black font-semibold hover:bg-[#d4ff4d] h-16 px-12 text-lg shadow-[0_0_80px_rgba(188,255,0,0.4)]">
+                Create Free Account <ArrowRight className="w-5 h-5 ml-2" />
+              </Button>
+            </Link>
           </div>
-        </motion.div>
+        </ScrollSection>
       </section>
 
       {/* Footer */}
       <footer className="border-t border-white/5 py-8 px-6">
-        <div className="max-w-5xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
+        <div className="max-w-5xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-2">
             <div className="w-8 h-8 rounded-lg bg-[#BCFF00] flex items-center justify-center">
               <span className="font-bold text-black text-sm">S</span>
@@ -598,23 +454,11 @@ export default function Landing() {
           </div>
           <div className="flex items-center gap-6 text-xs text-zinc-500">
             <Link to="/marketplace" className="hover:text-white transition-colors">Marketplace</Link>
-            <Link to="/razz" className="hover:text-white transition-colors">Live Razz</Link>
-            <span>© 2026 Slabby</span>
+            <Link to="/razz" className="hover:text-white transition-colors">Razz</Link>
+            <span>© 2026</span>
           </div>
         </div>
       </footer>
-
-      {/* Custom CSS for gradient animation */}
-      <style>{`
-        @keyframes gradient {
-          0%, 100% { background-position: 0% 50%; }
-          50% { background-position: 100% 50%; }
-        }
-        .animate-gradient {
-          background-size: 200% auto;
-          animation: gradient 4s ease infinite;
-        }
-      `}</style>
     </div>
   );
 }
