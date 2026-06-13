@@ -114,6 +114,7 @@ from routes.admin import router as admin_router
 from routes.payments import router as payments_router
 from routes.websocket import router as ws_router
 from routes.ebay import router as ebay_router
+from routes.uploads import router as uploads_router
 
 # Register all routes under /api prefix
 app.include_router(auth_router, prefix="/api")
@@ -124,6 +125,7 @@ app.include_router(wallet_router, prefix="/api")
 app.include_router(admin_router, prefix="/api")
 app.include_router(payments_router, prefix="/api")
 app.include_router(ebay_router, prefix="/api")
+app.include_router(uploads_router, prefix="/api")
 
 # WebSocket routes (no /api prefix)
 app.include_router(ws_router)

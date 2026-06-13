@@ -137,9 +137,9 @@ export default function Landing() {
       </motion.nav>
 
       {/* Hero Section */}
-      <section ref={heroRef} className="relative min-h-screen flex items-center pt-32 pb-20">
+      <section ref={heroRef} className="relative flex items-center pt-28 pb-12 lg:pt-32 lg:pb-16">
         <div className="max-w-7xl mx-auto px-6 w-full">
-          <div className="grid lg:grid-cols-2 gap-16 items-center">
+          <div className="grid lg:grid-cols-2 gap-12 lg:gap-16 items-center">
             {/* Left Content */}
             <motion.div
               initial={{ opacity: 0, x: -50 }}
@@ -167,7 +167,7 @@ export default function Landing() {
                 Every draw is verifiable. Join {stats.total_users}+ collectors.
               </p>
 
-              <div className="flex flex-col sm:flex-row gap-4 mb-12">
+              <div className="flex flex-col sm:flex-row gap-4 mb-10">
                 <Link to="/register">
                   <Button size="lg" className="bg-[#BCFF00] text-black font-semibold hover:bg-[#d4ff4d] h-14 px-8 text-base hover:scale-105 transition-all shadow-[0_0_40px_rgba(188,255,0,0.4)] group">
                     Start Trading Free
@@ -204,83 +204,145 @@ export default function Landing() {
               initial={{ opacity: 0, x: 50 }}
               animate={isHeroInView ? { opacity: 1, x: 0 } : {}}
               transition={{ duration: 0.8, delay: 0.4 }}
-              className="relative"
+              className="relative hidden lg:block"
             >
-              <div className="grid grid-cols-2 gap-4">
-                {liveCards.slice(0, 4).map((card, index) => (
-                  <motion.div
-                    key={card.id}
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.5 + index * 0.1 }}
-                    whileHover={{ scale: 1.05, y: -5 }}
-                    onHoverStart={() => setHoveredCard(card.id)}
-                    onHoverEnd={() => setHoveredCard(null)}
-                    className={`relative rounded-2xl overflow-hidden border transition-all duration-300 cursor-pointer ${
-                      hoveredCard === card.id 
-                        ? 'border-[#BCFF00]/50 shadow-[0_0_30px_rgba(188,255,0,0.2)]' 
-                        : 'border-white/10 bg-white/5'
-                    }`}
-                  >
-                    <div className="aspect-[3/4] bg-gradient-to-br from-zinc-800 to-zinc-900 flex items-center justify-center">
-                      <div className="text-4xl">🃏</div>
-                    </div>
-                    <div className="p-4 bg-black/60 backdrop-blur-sm">
-                      <p className="text-sm font-medium truncate">{card.title || 'Premium Card'}</p>
-                      <div className="flex items-center justify-between mt-2">
-                        <span className="text-[#BCFF00] font-bold">${card.asking_price?.toLocaleString() || '0'}</span>
-                        <span className="text-xs text-zinc-500">{card.condition || 'PSA 10'}</span>
-                      </div>
-                    </div>
-                    {hoveredCard === card.id && (
-                      <motion.div 
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        className="absolute inset-0 bg-[#BCFF00]/10 flex items-center justify-center"
+              {/* 3D Card Stack Effect */}
+              <div className="relative w-full max-w-md mx-auto">
+                {/* Background glow */}
+                <div className="absolute inset-0 bg-gradient-to-br from-[#BCFF00]/20 via-transparent to-violet-500/20 rounded-3xl blur-3xl" />
+                
+                {/* Stacked Cards */}
+                <div className="relative">
+                  {liveCards.slice(0, 3).map((card, index) => {
+                    const rotation = index === 0 ? -6 : index === 1 ? 0 : 6;
+                    const zIndex = index === 1 ? 30 : index === 0 ? 20 : 10;
+                    const scale = index === 1 ? 1 : 0.95;
+                    const translateY = index === 1 ? 0 : 10;
+                    
+                    return (
+                      <motion.div
+                        key={card.id || index}
+                        initial={{ opacity: 0, y: 50, rotate: 0 }}
+                        animate={{ opacity: 1, y: translateY, rotate: rotation }}
+                        transition={{ delay: 0.5 + index * 0.15, type: 'spring', stiffness: 100 }}
+                        whileHover={{ 
+                          scale: 1.08, 
+                          rotate: 0, 
+                          y: -20,
+                          zIndex: 50,
+                          transition: { duration: 0.3 }
+                        }}
+                        style={{ 
+                          zIndex,
+                          scale,
+                          position: index === 0 ? 'relative' : 'absolute',
+                          top: index === 0 ? 0 : '0',
+                          left: index === 0 ? 0 : `${index * 15}%`,
+                          right: index === 2 ? 0 : 'auto',
+                        }}
+                        className={`w-56 rounded-2xl overflow-hidden border border-white/20 bg-gradient-to-br from-zinc-900 to-zinc-950 cursor-pointer shadow-2xl ${
+                          index === 1 ? 'mx-auto' : ''
+                        }`}
                       >
-                        <span className="px-4 py-2 bg-[#BCFF00] text-black text-sm font-semibold rounded-full">
-                          View Card
-                        </span>
+                        {/* Card Image Area */}
+                        <div className="aspect-[3/4] relative overflow-hidden">
+                          {card.image_url ? (
+                            <img 
+                              src={card.image_url} 
+                              alt={card.title}
+                              className="w-full h-full object-cover"
+                            />
+                          ) : (
+                            <div className="w-full h-full bg-gradient-to-br from-zinc-800 via-zinc-900 to-black flex items-center justify-center">
+                              <div className="relative">
+                                <div className="absolute inset-0 bg-[#BCFF00]/20 rounded-full blur-2xl animate-pulse" />
+                                <Sparkles className="w-12 h-12 text-[#BCFF00]/60" />
+                              </div>
+                            </div>
+                          )}
+                          {/* Shine overlay */}
+                          <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/5 to-white/10 pointer-events-none" />
+                        </div>
+                        
+                        {/* Card Info */}
+                        <div className="p-4 bg-black/80 backdrop-blur-sm border-t border-white/10">
+                          <p className="text-sm font-semibold truncate text-white">{card.title || 'Premium Card'}</p>
+                          <div className="flex items-center justify-between mt-2">
+                            <span className="text-[#BCFF00] font-bold text-lg">${card.asking_price?.toLocaleString() || '0'}</span>
+                            <span className="text-xs text-zinc-500 bg-zinc-800/80 px-2 py-1 rounded-full">{card.condition || 'PSA 10'}</span>
+                          </div>
+                        </div>
                       </motion.div>
-                    )}
-                  </motion.div>
-                ))}
+                    );
+                  })}
+                  
+                  {/* Show placeholder cards if less than 3 */}
+                  {liveCards.length < 3 && [...Array(3 - liveCards.length)].map((_, i) => {
+                    const index = liveCards.length + i;
+                    const rotation = index === 0 ? -6 : index === 1 ? 0 : 6;
+                    const zIndex = index === 1 ? 30 : index === 0 ? 20 : 10;
+                    
+                    return (
+                      <motion.div
+                        key={`placeholder-${i}`}
+                        initial={{ opacity: 0, y: 50 }}
+                        animate={{ opacity: 0.7, y: index === 1 ? 0 : 10, rotate: rotation }}
+                        transition={{ delay: 0.8 + i * 0.15 }}
+                        style={{ 
+                          zIndex,
+                          position: index === 0 && liveCards.length === 0 ? 'relative' : 'absolute',
+                          top: 0,
+                          left: `${index * 15}%`,
+                        }}
+                        className="w-56 rounded-2xl overflow-hidden border border-white/10 bg-gradient-to-br from-zinc-900/80 to-zinc-950/80"
+                      >
+                        <div className="aspect-[3/4] bg-gradient-to-br from-zinc-800 via-zinc-900 to-black flex items-center justify-center">
+                          <Sparkles className="w-10 h-10 text-zinc-700" />
+                        </div>
+                        <div className="p-4 bg-black/60">
+                          <div className="h-4 bg-zinc-800 rounded w-3/4 mb-2" />
+                          <div className="h-5 bg-zinc-800 rounded w-1/2" />
+                        </div>
+                      </motion.div>
+                    );
+                  })}
+                </div>
+
+                {/* Floating Stats */}
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.8, x: -20 }}
+                  animate={{ opacity: 1, scale: 1, x: 0 }}
+                  transition={{ delay: 1.2 }}
+                  className="absolute -bottom-8 -left-8 bg-black/90 backdrop-blur-xl border border-white/10 rounded-2xl p-4 shadow-2xl z-40"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center">
+                      <TrendingUp className="w-5 h-5 text-white" />
+                    </div>
+                    <div>
+                      <p className="text-xl font-bold">{stats.cards_listed}</p>
+                      <p className="text-xs text-zinc-500">Cards Listed</p>
+                    </div>
+                  </div>
+                </motion.div>
+
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.8, x: 20 }}
+                  animate={{ opacity: 1, scale: 1, x: 0 }}
+                  transition={{ delay: 1.4 }}
+                  className="absolute -top-4 -right-4 bg-black/90 backdrop-blur-xl border border-white/10 rounded-2xl p-4 shadow-2xl z-40"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center">
+                      <Dice6 className="w-5 h-5 text-white" />
+                    </div>
+                    <div>
+                      <p className="text-xl font-bold">{stats.active_razzes}</p>
+                      <p className="text-xs text-zinc-500">Active Razzes</p>
+                    </div>
+                  </div>
+                </motion.div>
               </div>
-
-              {/* Floating Stats */}
-              <motion.div
-                initial={{ opacity: 0, scale: 0.8 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ delay: 1 }}
-                className="absolute -bottom-6 -left-6 bg-black/80 backdrop-blur-xl border border-white/10 rounded-2xl p-4 shadow-2xl"
-              >
-                <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center">
-                    <TrendingUp className="w-6 h-6 text-white" />
-                  </div>
-                  <div>
-                    <p className="text-2xl font-bold">{stats.cards_listed}</p>
-                    <p className="text-xs text-zinc-500">Cards Listed</p>
-                  </div>
-                </div>
-              </motion.div>
-
-              <motion.div
-                initial={{ opacity: 0, scale: 0.8 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ delay: 1.2 }}
-                className="absolute -top-4 -right-4 bg-black/80 backdrop-blur-xl border border-white/10 rounded-2xl p-4 shadow-2xl"
-              >
-                <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center">
-                    <Dice6 className="w-6 h-6 text-white" />
-                  </div>
-                  <div>
-                    <p className="text-2xl font-bold">{stats.active_razzes}</p>
-                    <p className="text-xs text-zinc-500">Active Razzes</p>
-                  </div>
-                </div>
-              </motion.div>
             </motion.div>
           </div>
         </div>
@@ -318,7 +380,7 @@ export default function Landing() {
       </section>
 
       {/* Features Bento Grid */}
-      <section id="features" className="py-24 px-6">
+      <section id="features" className="py-16 lg:py-20 px-6">
         <div className="max-w-7xl mx-auto">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -364,7 +426,7 @@ export default function Landing() {
       </section>
 
       {/* How It Works */}
-      <section className="py-24 px-6 bg-gradient-to-b from-transparent via-white/[0.02] to-transparent">
+      <section className="py-16 lg:py-20 px-6 bg-gradient-to-b from-transparent via-white/[0.02] to-transparent">
         <div className="max-w-7xl mx-auto">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -410,7 +472,7 @@ export default function Landing() {
       </section>
 
       {/* Testimonials */}
-      <section className="py-24 px-6">
+      <section className="py-16 lg:py-20 px-6">
         <div className="max-w-7xl mx-auto">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -451,7 +513,7 @@ export default function Landing() {
       </section>
 
       {/* Final CTA */}
-      <section className="py-32 px-6 relative overflow-hidden">
+      <section className="py-20 lg:py-24 px-6 relative overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-r from-[#BCFF00]/10 via-transparent to-violet-500/10" />
         <motion.div
           initial={{ opacity: 0, y: 30 }}
