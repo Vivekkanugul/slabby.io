@@ -26,7 +26,7 @@ export default function Login() {
     try {
       await login(email, password);
       toast.success('Welcome back!');
-      navigate('/dashboard');
+      navigate('/marketplace');
     } catch (error) {
       toast.error(error.response?.data?.detail || 'Invalid credentials');
     } finally {
@@ -51,14 +51,14 @@ export default function Login() {
         <div className="bg-[#0A0A0C] border border-white/10 rounded-2xl p-8">
           {/* Logo */}
           <div className="flex items-center gap-2 mb-8">
-            <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-[#007AFF] to-[#00E5FF] flex items-center justify-center">
-              <span className="font-heading font-bold text-white">CW</span>
+            <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-[#FF6B00] to-[#FF9500] flex items-center justify-center">
+              <span className="font-bold text-white">S</span>
             </div>
-            <span className="font-heading font-bold text-2xl">CardWise</span>
+            <span className="font-bold text-2xl text-white">Slabby</span>
           </div>
 
-          <h1 className="font-heading font-bold text-2xl text-white mb-2">Welcome back</h1>
-          <p className="text-zinc-400 mb-8">Sign in to access your portfolio</p>
+          <h1 className="font-bold text-2xl text-white mb-2">Welcome back</h1>
+          <p className="text-zinc-400 mb-8">Sign in to your account</p>
 
           <form onSubmit={handleSubmit} className="space-y-6">
             <div className="space-y-2">
@@ -80,7 +80,7 @@ export default function Login() {
                 <Input
                   id="password"
                   type={showPassword ? 'text' : 'password'}
-                  placeholder="••••••••"
+                  placeholder="Enter password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   className="bg-white/5 border-white/10 focus:border-white/30 pr-10"
@@ -98,7 +98,7 @@ export default function Login() {
 
             <Button
               type="submit"
-              className="w-full bg-white text-black hover:bg-gray-200"
+              className="w-full bg-[#FF6B00] hover:bg-[#E55A00] text-white"
               disabled={loading}
               data-testid="login-submit-btn"
             >
@@ -115,7 +115,7 @@ export default function Login() {
 
           <p className="text-center text-zinc-400 mt-6">
             Don't have an account?{' '}
-            <Link to="/register" className="text-[#007AFF] hover:underline" data-testid="register-link">
+            <Link to="/register" className="text-[#FF6B00] hover:underline" data-testid="register-link">
               Create one
             </Link>
           </p>

@@ -1,6 +1,6 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-import { Store, Briefcase, Brain, User, LogOut, Menu, X, BarChart3 } from 'lucide-react';
+import { Store, Shuffle, Dice6, User, LogOut, Menu, X, Wallet } from 'lucide-react';
 import { useState } from 'react';
 import { Button } from '../ui/button';
 import {
@@ -19,9 +19,9 @@ export const Navbar = () => {
 
   const navLinks = [
     { to: '/marketplace', label: 'Marketplace', icon: Store },
-    { to: '/portfolio', label: 'Portfolio', icon: Briefcase },
-    { to: '/analytics', label: 'Analytics', icon: BarChart3 },
-    { to: '/ai-insights', label: 'AI Research', icon: Brain },
+    { to: '/trades', label: 'Trades', icon: Shuffle },
+    { to: '/razz', label: 'Razz', icon: Dice6 },
+    { to: '/wallet', label: 'Wallet', icon: Wallet },
   ];
 
   const handleLogout = () => {
@@ -31,16 +31,19 @@ export const Navbar = () => {
 
   const isActive = (path) => location.pathname === path || location.pathname.startsWith(path + '/');
 
+  // Get display name from profile or fallback
+  const displayName = user?.profile?.display_name || user?.name || user?.email?.split('@')[0] || 'User';
+
   return (
     <nav className="sticky top-0 z-50 bg-black/80 backdrop-blur-xl border-b border-white/[0.06]" data-testid="navbar">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-14">
           {/* Logo */}
           <Link to="/" className="flex items-center gap-2.5 group" data-testid="logo-link">
-            <div className="w-7 h-7 rounded-md bg-[#007AFF] flex items-center justify-center transition-transform duration-200 group-hover:scale-105">
-              <span className="font-heading font-bold text-white text-xs tracking-tight">CW</span>
+            <div className="w-7 h-7 rounded-md bg-gradient-to-br from-[#FF6B00] to-[#FF9500] flex items-center justify-center transition-transform duration-200 group-hover:scale-105">
+              <span className="font-bold text-white text-xs tracking-tight">S</span>
             </div>
-            <span className="font-heading font-bold text-lg tracking-tight text-white">CardWise</span>
+            <span className="font-bold text-lg tracking-tight text-white">Slabby</span>
           </Link>
 
           {/* Desktop Navigation */}
@@ -60,7 +63,7 @@ export const Navbar = () => {
                   <link.icon className="w-3.5 h-3.5" />
                   {link.label}
                   {isActive(link.to) && (
-                    <span className="absolute bottom-0 left-3 right-3 h-[2px] bg-[#007AFF] rounded-full" />
+                    <span className="absolute bottom-0 left-3 right-3 h-[2px] bg-[#FF6B00] rounded-full" />
                   )}
                 </Link>
               ))}
@@ -76,12 +79,12 @@ export const Navbar = () => {
                     data-testid="user-menu-trigger"
                     className="flex items-center gap-2 px-2 py-1 rounded-md hover:bg-white/[0.06] transition-colors duration-200"
                   >
-                    <div className="w-7 h-7 rounded-full bg-gradient-to-br from-[#007AFF] to-[#00E5FF] flex items-center justify-center ring-1 ring-white/10">
+                    <div className="w-7 h-7 rounded-full bg-gradient-to-br from-[#FF6B00] to-[#FF9500] flex items-center justify-center ring-1 ring-white/10">
                       <span className="text-white text-[11px] font-semibold">
-                        {user?.name?.charAt(0).toUpperCase()}
+                        {displayName.charAt(0).toUpperCase()}
                       </span>
                     </div>
-                    <span className="hidden sm:block text-[13px] text-zinc-400 font-medium">{user?.name}</span>
+                    <span className="hidden sm:block text-[13px] text-zinc-400 font-medium">{displayName}</span>
                   </button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-44 bg-[#121214] border-white/[0.08] shadow-xl shadow-black/50">
@@ -108,7 +111,7 @@ export const Navbar = () => {
                   </Button>
                 </Link>
                 <Link to="/register">
-                  <Button data-testid="register-btn" className="bg-[#007AFF] hover:bg-[#0066DD] text-white text-[13px] font-semibold h-8 px-4 rounded-md">
+                  <Button data-testid="register-btn" className="bg-[#FF6B00] hover:bg-[#E55A00] text-white text-[13px] font-semibold h-8 px-4 rounded-md">
                     Get Started
                   </Button>
                 </Link>

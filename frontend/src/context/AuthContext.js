@@ -7,7 +7,7 @@ const API_URL = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
-  const [token, setToken] = useState(localStorage.getItem('cardwise_token'));
+  const [token, setToken] = useState(localStorage.getItem('slabby_token'));
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -34,17 +34,21 @@ export const AuthProvider = ({ children }) => {
   const login = async (email, password) => {
     const response = await axios.post(`${API_URL}/auth/login`, { email, password });
     const { access_token, user: userData } = response.data;
-    localStorage.setItem('cardwise_token', access_token);
+    localStorage.setItem('slabby_token', access_token);
     axios.defaults.headers.common['Authorization'] = `Bearer ${access_token}`;
     setToken(access_token);
     setUser(userData);
     return userData;
   };
 
-  const register = async (email, password, name) => {
-    const response = await axios.post(`${API_URL}/auth/register`, { email, password, name });
+  const register = async (email, password, displayName) => {
+    const response = await axios.post(`${API_URL}/auth/register`, { 
+      email, 
+      password, 
+      display_name: displayName 
+    });
     const { access_token, user: userData } = response.data;
-    localStorage.setItem('cardwise_token', access_token);
+    localStorage.setItem('slabby_token', access_token);
     axios.defaults.headers.common['Authorization'] = `Bearer ${access_token}`;
     setToken(access_token);
     setUser(userData);
@@ -52,7 +56,7 @@ export const AuthProvider = ({ children }) => {
   };
 
   const logout = () => {
-    localStorage.removeItem('cardwise_token');
+    localStorage.removeItem('slabby_token');
     delete axios.defaults.headers.common['Authorization'];
     setToken(null);
     setUser(null);

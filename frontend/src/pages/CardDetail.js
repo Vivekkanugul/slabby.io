@@ -1,349 +1,295 @@
 import { useState, useEffect } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { getCard, getCardPriceHistory, getCardPrediction, analyzeCardWithAI, addToPortfolio } from '../lib/api';
-import { PriceChart } from '../components/Charts/PriceChart';
-import { AISignalBadge } from '../components/AI/AISignalBadge';
+import { getCard, createTrade } from '../lib/api';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
-import { Label } from '../components/ui/label';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from '../components/ui/dialog';
 import { toast } from 'sonner';
 import { 
-  ArrowLeft, TrendingUp, TrendingDown, Sparkles, ShoppingCart, 
-  Plus, Loader2, AlertTriangle, CheckCircle, BarChart3, Activity 
+  ArrowLeft, Tag, Calendar, User, Package, Shuffle, DollarSign,
+  Image as ImageIcon
 } from 'lucide-react';
-import { formatCurrency, formatPercent, getPriceChangeColor } from '../lib/utils';
 
 export default function CardDetail() {
   const { cardId } = useParams();
-  const { isAuthenticated } = useAuth();
+  const navigate = useNavigate();
+  const { isAuthenticated, user } = useAuth();
   const [card, setCard] = useState(null);
-  const [priceHistory, setPriceHistory] = useState([]);
-  const [prediction, setPrediction] = useState(null);
-  const [aiAnalysis, setAiAnalysis] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [analyzing, setAnalyzing] = useState(false);
-  const [quantity, setQuantity] = useState(1);
-  const [purchasePrice, setPurchasePrice] = useState('');
-  const [addDialogOpen, setAddDialogOpen] = useState(false);
-  const [adding, setAdding] = useState(false);
+  const [showTradeModal, setShowTradeModal] = useState(false);
+  const [offerAmount, setOfferAmount] = useState('');
+  const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
-    fetchCardData();
+    fetchCard();
   }, [cardId]);
 
-  const fetchCardData = async () => {
+  const fetchCard = async () => {
     try {
-      const [cardRes, historyRes, predRes] = await Promise.all([
-        getCard(cardId),
-        getCardPriceHistory(cardId),
-        getCardPrediction(cardId),
-      ]);
-      setCard(cardRes.data);
-      setPriceHistory(historyRes.data.history);
-      setPrediction(predRes.data);
-      setPurchasePrice(cardRes.data.current_price.toString());
+      const response = await getCard(cardId);
+      setCard(response.data);
     } catch (error) {
       console.error('Error fetching card:', error);
-      toast.error('Failed to load card details');
+      toast.error('Card not found');
+      navigate('/marketplace');
     } finally {
       setLoading(false);
     }
   };
 
-  const handleAIAnalysis = async () => {
-    if (!isAuthenticated) {
-      toast.error('Please sign in to use AI analysis');
+  const handleMakeOffer = async () => {
+    if (!offerAmount || parseFloat(offerAmount) <= 0) {
+      toast.error('Enter a valid offer amount');
       return;
     }
-    setAnalyzing(true);
+
+    setSubmitting(true);
     try {
-      const response = await analyzeCardWithAI(cardId);
-      setAiAnalysis(response.data);
-      toast.success('AI analysis complete');
+      await createTrade({
+        receiver_id: card.owner_id,
+        trade_type: 'cash_for_cards',
+        initiator_side: {
+          card_ids: [],
+          cash_amount: parseFloat(offerAmount)
+        },
+        receiver_side: {
+          card_ids: [card.id],
+          cash_amount: 0
+        },
+        message: `Cash offer for ${card.title}`
+      });
+      toast.success('Trade offer sent!');
+      setShowTradeModal(false);
+      setOfferAmount('');
     } catch (error) {
-      toast.error('Failed to generate AI analysis');
+      toast.error(error.response?.data?.detail || 'Failed to create offer');
     } finally {
-      setAnalyzing(false);
+      setSubmitting(false);
     }
   };
 
-  const handleAddToPortfolio = async () => {
-    if (!isAuthenticated) {
-      toast.error('Please sign in to add cards');
-      return;
-    }
-    setAdding(true);
-    try {
-      await addToPortfolio({
-        card_id: cardId,
-        quantity: parseInt(quantity),
-        purchase_price: parseFloat(purchasePrice),
-      });
-      toast.success(`Added ${quantity} card(s) to portfolio`);
-      setAddDialogOpen(false);
-    } catch (error) {
-      toast.error('Failed to add to portfolio');
-    } finally {
-      setAdding(false);
-    }
+  const getConditionLabel = (condition) => {
+    const labels = {
+      raw: 'Raw',
+      psa_10: 'PSA 10',
+      psa_9: 'PSA 9',
+      psa_8: 'PSA 8',
+      bgs_10: 'BGS 10',
+      bgs_9_5: 'BGS 9.5',
+    };
+    return labels[condition] || condition;
+  };
+
+  const getCategoryLabel = (cat) => {
+    const labels = {
+      basketball: 'Basketball',
+      baseball: 'Baseball',
+      football: 'Football',
+      hockey: 'Hockey',
+      soccer: 'Soccer',
+      pokemon: 'Pokemon',
+      other: 'Other'
+    };
+    return labels[cat] || cat;
   };
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <Loader2 className="w-8 h-8 animate-spin text-[#007AFF]" />
+      <div className="min-h-screen flex items-center justify-center bg-[#05050A]">
+        <div className="w-8 h-8 border-2 border-[#FF6B00] border-t-transparent rounded-full animate-spin" />
       </div>
     );
   }
 
   if (!card) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <p className="text-zinc-400">Card not found</p>
+      <div className="min-h-screen flex items-center justify-center bg-[#05050A]">
+        <div className="text-center">
+          <Package className="w-12 h-12 text-zinc-600 mx-auto mb-4" />
+          <h2 className="text-xl font-bold text-white mb-2">Card Not Found</h2>
+          <Link to="/marketplace">
+            <Button variant="outline">Back to Marketplace</Button>
+          </Link>
+        </div>
       </div>
     );
   }
 
-  const isPositive = card.price_change_pct >= 0;
+  const isOwner = user?.id === card.owner_id;
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8" data-testid="card-detail-page">
-      {/* Back Button */}
-      <Link
-        to="/marketplace"
-        className="inline-flex items-center gap-2 text-zinc-400 hover:text-white mb-6 transition-colors"
-        data-testid="back-to-marketplace"
-      >
-        <ArrowLeft className="w-4 h-4" />
-        Back to Marketplace
-      </Link>
+    <div className="min-h-screen bg-[#05050A] py-8" data-testid="card-detail-page">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+        {/* Back Link */}
+        <Link
+          to="/marketplace"
+          className="inline-flex items-center gap-2 text-zinc-400 hover:text-white mb-8 transition-colors"
+          data-testid="back-to-marketplace"
+        >
+          <ArrowLeft className="w-4 h-4" />
+          Back to Marketplace
+        </Link>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Card Image */}
-        <div className="lg:col-span-1">
-          <div className="sticky top-24">
-            <div className="bg-[#0A0A0C] border border-white/10 rounded-2xl overflow-hidden">
-              <div className="relative aspect-[3/4]">
-                <img
-                  src={card.image_url}
-                  alt={card.name}
-                  className="w-full h-full object-cover"
-                />
-                {/* Rarity Badge */}
-                <div className="absolute top-4 left-4">
-                  <span className={`px-3 py-1.5 rounded-full text-sm font-medium ${
-                    card.rarity === 'Legendary' ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30' :
-                    card.rarity === 'Ultra Rare' ? 'bg-purple-500/20 text-purple-400 border border-purple-500/30' :
-                    card.rarity === 'Rare' ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30' :
-                    'bg-zinc-500/20 text-zinc-400 border border-zinc-500/30'
-                  }`}>
-                    {card.rarity}
-                  </span>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          {/* Image Section */}
+          <div className="aspect-square bg-[#0A0A0C] border border-white/10 rounded-2xl overflow-hidden">
+            {card.images?.[0]?.url ? (
+              <img 
+                src={card.images[0].url} 
+                alt={card.title}
+                className="w-full h-full object-contain"
+              />
+            ) : (
+              <div className="w-full h-full flex items-center justify-center">
+                <ImageIcon className="w-24 h-24 text-zinc-700" />
+              </div>
+            )}
+          </div>
+
+          {/* Details Section */}
+          <div>
+            <div className="mb-6">
+              <div className="flex items-center gap-2 mb-2">
+                <span className="px-2 py-0.5 text-xs bg-[#FF6B00]/10 text-[#FF6B00] border border-[#FF6B00]/20 rounded">
+                  {getCategoryLabel(card.category)}
+                </span>
+                <span className="px-2 py-0.5 text-xs bg-white/5 text-zinc-400 border border-white/10 rounded">
+                  {getConditionLabel(card.condition)}
+                </span>
+              </div>
+              
+              <h1 className="text-2xl lg:text-3xl font-bold text-white mb-2">{card.title}</h1>
+              
+              {card.player_name && (
+                <p className="text-lg text-zinc-400 mb-4">{card.player_name}</p>
+              )}
+            </div>
+
+            {/* Price */}
+            {card.asking_price && (
+              <div className="bg-[#0A0A0C] border border-white/10 rounded-xl p-6 mb-6">
+                <p className="text-sm text-zinc-500 mb-1">Asking Price</p>
+                <div className="flex items-center gap-2 text-3xl font-bold text-white">
+                  <DollarSign className="w-6 h-6 text-[#FF6B00]" />
+                  {card.asking_price.toLocaleString()}
                 </div>
               </div>
+            )}
 
-              {/* Action Buttons */}
-              <div className="p-4 space-y-3">
-                <Dialog open={addDialogOpen} onOpenChange={setAddDialogOpen}>
-                  <DialogTrigger asChild>
-                    <Button className="w-full bg-[#007AFF] hover:bg-[#005bb5]" data-testid="add-to-portfolio-btn">
-                      <Plus className="w-4 h-4 mr-2" />
-                      Add to Portfolio
-                    </Button>
-                  </DialogTrigger>
-                  <DialogContent className="bg-[#0A0A0C] border-white/10">
-                    <DialogHeader>
-                      <DialogTitle>Add to Portfolio</DialogTitle>
-                    </DialogHeader>
-                    <div className="space-y-4 pt-4">
-                      <div className="space-y-2">
-                        <Label>Quantity</Label>
-                        <Input
-                          type="number"
-                          min="1"
-                          value={quantity}
-                          onChange={(e) => setQuantity(e.target.value)}
-                          className="bg-white/5 border-white/10"
-                          data-testid="portfolio-quantity-input"
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label>Purchase Price (per card)</Label>
-                        <Input
-                          type="number"
-                          min="0"
-                          step="0.01"
-                          value={purchasePrice}
-                          onChange={(e) => setPurchasePrice(e.target.value)}
-                          className="bg-white/5 border-white/10"
-                          data-testid="portfolio-price-input"
-                        />
-                      </div>
-                      <div className="p-3 bg-white/5 rounded-lg">
-                        <div className="flex justify-between text-sm">
-                          <span className="text-zinc-400">Total Investment</span>
-                          <span className="font-mono text-white">
-                            {formatCurrency(quantity * parseFloat(purchasePrice || 0))}
-                          </span>
-                        </div>
-                      </div>
-                      <Button
-                        onClick={handleAddToPortfolio}
-                        disabled={adding}
-                        className="w-full bg-white text-black hover:bg-gray-200"
-                        data-testid="confirm-add-btn"
-                      >
-                        {adding ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
-                        Confirm
-                      </Button>
-                    </div>
-                  </DialogContent>
-                </Dialog>
+            {/* Card Info */}
+            <div className="grid grid-cols-2 gap-4 mb-6">
+              {card.team && (
+                <div className="bg-[#0A0A0C] border border-white/10 rounded-lg p-4">
+                  <p className="text-xs text-zinc-500 mb-1">Team</p>
+                  <p className="text-white font-medium">{card.team}</p>
+                </div>
+              )}
+              {card.year && (
+                <div className="bg-[#0A0A0C] border border-white/10 rounded-lg p-4">
+                  <p className="text-xs text-zinc-500 mb-1">Year</p>
+                  <p className="text-white font-medium">{card.year}</p>
+                </div>
+              )}
+              {card.set_name && (
+                <div className="bg-[#0A0A0C] border border-white/10 rounded-lg p-4">
+                  <p className="text-xs text-zinc-500 mb-1">Set</p>
+                  <p className="text-white font-medium">{card.set_name}</p>
+                </div>
+              )}
+              {card.card_number && (
+                <div className="bg-[#0A0A0C] border border-white/10 rounded-lg p-4">
+                  <p className="text-xs text-zinc-500 mb-1">Card #</p>
+                  <p className="text-white font-medium">{card.card_number}</p>
+                </div>
+              )}
+            </div>
 
+            {/* Actions */}
+            {isAuthenticated && !isOwner && card.status === 'available' && (
+              <div className="space-y-3">
+                <Button
+                  className="w-full bg-[#FF6B00] hover:bg-[#E55A00] h-12"
+                  onClick={() => setShowTradeModal(true)}
+                  data-testid="make-offer-btn"
+                >
+                  <Shuffle className="w-5 h-5 mr-2" />
+                  Make an Offer
+                </Button>
+              </div>
+            )}
+
+            {isOwner && (
+              <div className="bg-[#0A0A0C] border border-[#FF6B00]/20 rounded-xl p-4">
+                <p className="text-[#FF6B00] font-medium">This is your card</p>
+                <p className="text-sm text-zinc-400">Manage it from your portfolio</p>
+              </div>
+            )}
+
+            {!isAuthenticated && (
+              <div className="bg-[#0A0A0C] border border-white/10 rounded-xl p-6 text-center">
+                <p className="text-zinc-400 mb-4">Sign in to make offers on this card</p>
+                <Link to="/login">
+                  <Button className="bg-[#FF6B00] hover:bg-[#E55A00]">
+                    Sign In
+                  </Button>
+                </Link>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Trade Offer Modal */}
+        {showTradeModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
+            <div className="bg-[#0A0A0C] border border-white/10 rounded-2xl w-full max-w-md p-6">
+              <h2 className="text-xl font-bold text-white mb-4">Make an Offer</h2>
+              
+              <div className="mb-6">
+                <p className="text-sm text-zinc-400 mb-2">{card.title}</p>
+                {card.asking_price && (
+                  <p className="text-sm text-zinc-500">Asking: ${card.asking_price.toLocaleString()}</p>
+                )}
+              </div>
+              
+              <div className="mb-6">
+                <label className="block text-sm text-zinc-400 mb-2">Your Cash Offer</label>
+                <div className="relative">
+                  <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500" />
+                  <Input
+                    type="number"
+                    placeholder="0.00"
+                    value={offerAmount}
+                    onChange={(e) => setOfferAmount(e.target.value)}
+                    className="pl-10 bg-[#121214] border-white/10 h-12 text-lg"
+                    data-testid="offer-amount-input"
+                  />
+                </div>
+              </div>
+              
+              <p className="text-xs text-zinc-500 mb-6">
+                The seller will be notified of your offer. They can accept, reject, or counter.
+              </p>
+              
+              <div className="flex gap-3">
                 <Button
                   variant="outline"
-                  className="w-full border-[#00E5FF] text-[#00E5FF] hover:bg-[#00E5FF]/10"
-                  onClick={handleAIAnalysis}
-                  disabled={analyzing}
-                  data-testid="ai-analysis-btn"
+                  className="flex-1"
+                  onClick={() => { setShowTradeModal(false); setOfferAmount(''); }}
                 >
-                  {analyzing ? (
-                    <Loader2 className="w-4 h-4 animate-spin mr-2" />
-                  ) : (
-                    <Sparkles className="w-4 h-4 mr-2" />
-                  )}
-                  AI Analysis
+                  Cancel
+                </Button>
+                <Button
+                  className="flex-1 bg-[#FF6B00] hover:bg-[#E55A00]"
+                  onClick={handleMakeOffer}
+                  disabled={submitting || !offerAmount}
+                  data-testid="submit-offer-btn"
+                >
+                  {submitting ? 'Sending...' : 'Send Offer'}
                 </Button>
               </div>
             </div>
           </div>
-        </div>
-
-        {/* Card Details */}
-        <div className="lg:col-span-2 space-y-6">
-          {/* Header */}
-          <div>
-            <div className="flex items-center gap-2 mb-2">
-              <span className="text-xs uppercase tracking-wider text-zinc-500">{card.category}</span>
-              <span className="text-zinc-600">•</span>
-              <span className="text-xs text-zinc-500">{card.set_name}</span>
-            </div>
-            <h1 className="font-heading font-bold text-2xl sm:text-3xl text-white mb-2">{card.name}</h1>
-            <p className="text-lg text-zinc-400">{card.player_name} • {card.team}</p>
-          </div>
-
-          {/* Price Stats */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-            <div className="bg-[#0A0A0C] border border-white/10 rounded-xl p-4">
-              <span className="text-xs uppercase tracking-wider text-zinc-500 block mb-1">Current Price</span>
-              <span className="font-heading font-bold text-xl text-white">
-                {formatCurrency(card.current_price, true)}
-              </span>
-            </div>
-            <div className="bg-[#0A0A0C] border border-white/10 rounded-xl p-4">
-              <span className="text-xs uppercase tracking-wider text-zinc-500 block mb-1">24h Change</span>
-              <span className={`font-heading font-bold text-xl ${getPriceChangeColor(card.price_change_pct)}`}>
-                {formatPercent(card.price_change_pct)}
-              </span>
-            </div>
-            <div className="bg-[#0A0A0C] border border-white/10 rounded-xl p-4">
-              <span className="text-xs uppercase tracking-wider text-zinc-500 block mb-1">24h Volume</span>
-              <span className="font-heading font-bold text-xl text-white">{card.volume_24h}</span>
-            </div>
-            <div className="bg-[#0A0A0C] border border-white/10 rounded-xl p-4">
-              <span className="text-xs uppercase tracking-wider text-zinc-500 block mb-1">Grade</span>
-              <span className="font-mono font-bold text-xl text-white">{card.grade}</span>
-            </div>
-          </div>
-
-          {/* Price Chart */}
-          <div className="bg-[#0A0A0C] border border-white/10 rounded-xl p-6">
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="font-medium text-lg text-white">Price History</h2>
-              <span className="text-sm text-zinc-500">Last 30 days</span>
-            </div>
-            <PriceChart data={priceHistory} height={300} />
-          </div>
-
-          {/* AI Prediction */}
-          {prediction && (
-            <div className="bg-[#0A0A0C] border border-white/10 rounded-xl p-6">
-              <div className="flex items-center gap-3 mb-6">
-                <div className="p-2 rounded-lg bg-[#00E5FF]/10">
-                  <Sparkles className="w-5 h-5 text-[#00E5FF]" />
-                </div>
-                <div>
-                  <h2 className="font-medium text-lg text-white">AI Prediction</h2>
-                  <p className="text-sm text-zinc-500">Powered by GPT-5.2</p>
-                </div>
-                <div className="ml-auto">
-                  <AISignalBadge signal={prediction.signal} confidence={prediction.confidence_score} />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
-                <div className="p-4 bg-white/5 rounded-lg">
-                  <span className="text-xs text-zinc-500 block mb-1">7-Day Prediction</span>
-                  <span className="font-mono font-medium text-white">
-                    {formatCurrency(prediction.predicted_price_7d, true)}
-                  </span>
-                </div>
-                <div className="p-4 bg-white/5 rounded-lg">
-                  <span className="text-xs text-zinc-500 block mb-1">30-Day Prediction</span>
-                  <span className="font-mono font-medium text-white">
-                    {formatCurrency(prediction.predicted_price_30d, true)}
-                  </span>
-                </div>
-                <div className="p-4 bg-white/5 rounded-lg">
-                  <span className="text-xs text-zinc-500 block mb-1">Confidence</span>
-                  <span className="font-mono font-medium text-emerald-400">
-                    {Math.round(prediction.confidence_score * 100)}%
-                  </span>
-                </div>
-                <div className="p-4 bg-white/5 rounded-lg">
-                  <span className="text-xs text-zinc-500 block mb-1">Risk Score</span>
-                  <span className={`font-mono font-medium ${
-                    prediction.risk_score > 0.6 ? 'text-red-400' : 
-                    prediction.risk_score > 0.3 ? 'text-amber-400' : 'text-emerald-400'
-                  }`}>
-                    {Math.round(prediction.risk_score * 100)}%
-                  </span>
-                </div>
-              </div>
-
-              <p className="text-zinc-400 text-sm">{prediction.analysis}</p>
-
-              {prediction.factors && prediction.factors.length > 0 && (
-                <div className="mt-4 flex flex-wrap gap-2">
-                  {prediction.factors.map((factor, i) => (
-                    <span key={i} className="px-2 py-1 bg-white/5 rounded-full text-xs text-zinc-400">
-                      {factor}
-                    </span>
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* AI Analysis Result */}
-          {aiAnalysis && (
-            <div className="bg-[#0A0A0C] border border-[#00E5FF]/30 rounded-xl p-6">
-              <div className="flex items-center gap-2 mb-4">
-                <Sparkles className="w-5 h-5 text-[#00E5FF]" />
-                <h3 className="font-medium text-white">GPT-5.2 Analysis</h3>
-              </div>
-              <p className="text-zinc-300 whitespace-pre-wrap">{aiAnalysis.analysis}</p>
-            </div>
-          )}
-        </div>
+        )}
       </div>
     </div>
   );

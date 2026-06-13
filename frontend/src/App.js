@@ -8,16 +8,12 @@ import { Navbar } from "./components/Layout/Navbar";
 import Landing from "./pages/Landing";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
-import Dashboard from "./pages/Dashboard";
 import Marketplace from "./pages/Marketplace";
 import CardDetail from "./pages/CardDetail";
-import Portfolio from "./pages/Portfolio";
-import AIInsights from "./pages/AIInsights";
 import Profile from "./pages/Profile";
-import Analytics from "./pages/Analytics";
-import WhatIfSimulator from "./pages/WhatIfSimulator";
-import GradeCalculator from "./pages/GradeCalculator";
-import CardScreener from "./pages/CardScreener";
+import Trades from "./pages/Trades";
+import Razz from "./pages/Razz";
+import Wallet from "./pages/Wallet";
 
 // Protected Route wrapper
 const ProtectedRoute = () => {
@@ -26,7 +22,7 @@ const ProtectedRoute = () => {
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-[#05050A]">
-        <div className="w-8 h-8 border-2 border-[#007AFF] border-t-transparent rounded-full animate-spin" />
+        <div className="w-8 h-8 border-2 border-[#FF6B00] border-t-transparent rounded-full animate-spin" />
       </div>
     );
   }
@@ -84,17 +80,13 @@ function AppRoutes() {
       <Route element={<PublicWithNav />}>
         <Route path="/marketplace" element={<Marketplace />} />
         <Route path="/card/:cardId" element={<CardDetail />} />
+        <Route path="/razz" element={<Razz />} />
       </Route>
 
       {/* Protected routes */}
       <Route element={<ProtectedRoute />}>
-        <Route path="/dashboard" element={<Dashboard />} />
-        <Route path="/portfolio" element={<Portfolio />} />
-        <Route path="/ai-insights" element={<AIInsights />} />
-        <Route path="/analytics" element={<Analytics />} />
-        <Route path="/analytics/simulator" element={<WhatIfSimulator />} />
-        <Route path="/analytics/grading" element={<GradeCalculator />} />
-        <Route path="/analytics/screener" element={<CardScreener />} />
+        <Route path="/trades" element={<Trades />} />
+        <Route path="/wallet" element={<Wallet />} />
         <Route path="/profile" element={<Profile />} />
       </Route>
 
