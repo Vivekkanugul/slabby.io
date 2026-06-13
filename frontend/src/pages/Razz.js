@@ -88,14 +88,14 @@ export default function Razz() {
   }
 
   return (
-    <div className="min-h-screen bg-[#05050A] py-8" data-testid="razz-page">
+    <div className="min-h-screen bg-[#050508] py-8" data-testid="razz-page">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
           <div>
-            <h1 className="text-2xl font-bold text-white flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-[#FF6B00]/10 flex items-center justify-center">
-                <Dice6 className="w-5 h-5 text-[#FF6B00]" />
+            <h1 className="font-heading text-2xl font-medium text-white flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-[#00E5FF]/10 flex items-center justify-center">
+                <Dice6 className="w-5 h-5 text-[#00E5FF]" />
               </div>
               Razz
             </h1>
@@ -108,7 +108,7 @@ export default function Razz() {
                 variant={activeTab === 'browse' ? 'default' : 'outline'}
                 size="sm"
                 onClick={() => setActiveTab('browse')}
-                className={activeTab === 'browse' ? 'bg-[#FF6B00] hover:bg-[#E55A00]' : 'border-white/10'}
+                className={activeTab === 'browse' ? 'bg-[#00E5FF] text-black hover:bg-[#80F2FF]' : 'border-white/10'}
               >
                 Browse
               </Button>
@@ -116,7 +116,7 @@ export default function Razz() {
                 variant={activeTab === 'my-razzes' ? 'default' : 'outline'}
                 size="sm"
                 onClick={() => setActiveTab('my-razzes')}
-                className={activeTab === 'my-razzes' ? 'bg-[#FF6B00] hover:bg-[#E55A00]' : 'border-white/10'}
+                className={activeTab === 'my-razzes' ? 'bg-[#00E5FF] text-black hover:bg-[#80F2FF]' : 'border-white/10'}
               >
                 My Entries
               </Button>
@@ -125,8 +125,8 @@ export default function Razz() {
         </div>
 
         {/* Provably Fair Info */}
-        <div className="bg-[#0A0A0C] border border-[#FF6B00]/20 rounded-xl p-4 mb-8 flex items-start gap-3">
-          <Shield className="w-5 h-5 text-[#FF6B00] mt-0.5" />
+        <div className="bg-[#0A0A0E] border border-[#00E5FF]/20 rounded-xl p-4 mb-8 flex items-start gap-3">
+          <Shield className="w-5 h-5 text-[#00E5FF] mt-0.5" />
           <div>
             <h3 className="text-sm font-medium text-white mb-1">Provably Fair</h3>
             <p className="text-xs text-zinc-400">
@@ -152,7 +152,7 @@ export default function Razz() {
                 {razzes.map((razz) => (
                   <div
                     key={razz.id}
-                    className="bg-[#0A0A0C] border border-white/10 rounded-xl overflow-hidden hover:border-[#FF6B00]/30 transition-all cursor-pointer"
+                    className="bg-[#0A0A0E] border border-white/10 rounded-xl overflow-hidden hover:border-[#00E5FF]/30 transition-all cursor-pointer"
                     onClick={() => setSelectedRazz(razz)}
                     data-testid={`razz-card-${razz.id}`}
                   >
@@ -183,9 +183,9 @@ export default function Razz() {
                       </div>
                       
                       {/* Progress Bar */}
-                      <div className="h-2 bg-[#121214] rounded-full overflow-hidden">
+                      <div className="h-2 bg-[#121216] rounded-full overflow-hidden">
                         <div 
-                          className="h-full bg-gradient-to-r from-[#FF6B00] to-[#FF9500] transition-all"
+                          className="h-full bg-gradient-to-r from-[#00E5FF] to-[#00B4D8] transition-all"
                           style={{ width: `${(razz.spots_sold / razz.total_spots) * 100}%` }}
                         />
                       </div>
@@ -296,7 +296,7 @@ export default function Razz() {
                             ${isTaken 
                               ? 'bg-zinc-800 text-zinc-600 cursor-not-allowed' 
                               : isSelected 
-                                ? 'bg-[#FF6B00] text-white' 
+                                ? 'bg-[#00E5FF] text-black' 
                                 : 'bg-[#121214] text-zinc-400 hover:bg-[#1a1a1c]'}
                           `}
                         >
@@ -320,7 +320,7 @@ export default function Razz() {
                 </div>
                 
                 <Button
-                  className="w-full bg-[#FF6B00] hover:bg-[#E55A00]"
+                  className="w-full bg-[#00E5FF] text-black hover:bg-[#80F2FF]"
                   disabled={selectedSpots.length === 0 || !isAuthenticated}
                   onClick={handlePurchase}
                   data-testid="purchase-spots-btn"

@@ -31,39 +31,38 @@ export const Navbar = () => {
 
   const isActive = (path) => location.pathname === path || location.pathname.startsWith(path + '/');
 
-  // Get display name from profile or fallback
   const displayName = user?.profile?.display_name || user?.name || user?.email?.split('@')[0] || 'User';
 
   return (
-    <nav className="sticky top-0 z-50 bg-black/80 backdrop-blur-xl border-b border-white/[0.06]" data-testid="navbar">
+    <nav className="sticky top-0 z-50 bg-black/60 backdrop-blur-2xl border-b border-white/10" data-testid="navbar">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-14">
+        <div className="flex items-center justify-between h-16">
           {/* Logo */}
-          <Link to="/" className="flex items-center gap-2.5 group" data-testid="logo-link">
-            <div className="w-7 h-7 rounded-md bg-gradient-to-br from-[#FF6B00] to-[#FF9500] flex items-center justify-center transition-transform duration-200 group-hover:scale-105">
-              <span className="font-bold text-white text-xs tracking-tight">S</span>
+          <Link to="/" className="flex items-center gap-3 group" data-testid="logo-link">
+            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#00E5FF] to-[#00B4D8] flex items-center justify-center shadow-[0_0_15px_rgba(0,229,255,0.3)] transition-all duration-300 group-hover:shadow-[0_0_25px_rgba(0,229,255,0.5)]">
+              <span className="font-heading font-semibold text-black text-sm">S</span>
             </div>
-            <span className="font-bold text-lg tracking-tight text-white">Slabby</span>
+            <span className="font-heading font-medium text-xl tracking-tight text-white">Slabby</span>
           </Link>
 
           {/* Desktop Navigation */}
           {isAuthenticated && (
-            <div className="hidden md:flex items-center gap-0.5">
+            <div className="hidden md:flex items-center gap-1">
               {navLinks.map((link) => (
                 <Link
                   key={link.to}
                   to={link.to}
                   data-testid={`nav-${link.label.toLowerCase().replace(' ', '-')}`}
-                  className={`relative flex items-center gap-2 px-3.5 py-1.5 rounded-md text-[13px] font-medium transition-colors duration-200 ${
+                  className={`relative flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
                     isActive(link.to)
-                      ? 'text-white'
-                      : 'text-zinc-500 hover:text-zinc-200'
+                      ? 'text-white bg-white/5'
+                      : 'text-zinc-400 hover:text-white hover:bg-white/5'
                   }`}
                 >
-                  <link.icon className="w-3.5 h-3.5" />
+                  <link.icon className="w-4 h-4" />
                   {link.label}
                   {isActive(link.to) && (
-                    <span className="absolute bottom-0 left-3 right-3 h-[2px] bg-[#FF6B00] rounded-full" />
+                    <span className="absolute bottom-0 left-4 right-4 h-[2px] bg-[#00E5FF] rounded-full" />
                   )}
                 </Link>
               ))}
@@ -77,41 +76,41 @@ export const Navbar = () => {
                 <DropdownMenuTrigger asChild>
                   <button
                     data-testid="user-menu-trigger"
-                    className="flex items-center gap-2 px-2 py-1 rounded-md hover:bg-white/[0.06] transition-colors duration-200"
+                    className="flex items-center gap-2.5 px-3 py-2 rounded-lg hover:bg-white/5 transition-all duration-200"
                   >
-                    <div className="w-7 h-7 rounded-full bg-gradient-to-br from-[#FF6B00] to-[#FF9500] flex items-center justify-center ring-1 ring-white/10">
-                      <span className="text-white text-[11px] font-semibold">
+                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#00E5FF] to-[#00B4D8] flex items-center justify-center ring-2 ring-white/10">
+                      <span className="text-black text-xs font-semibold">
                         {displayName.charAt(0).toUpperCase()}
                       </span>
                     </div>
-                    <span className="hidden sm:block text-[13px] text-zinc-400 font-medium">{displayName}</span>
+                    <span className="hidden sm:block text-sm text-zinc-300 font-medium">{displayName}</span>
                   </button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-44 bg-[#121214] border-white/[0.08] shadow-xl shadow-black/50">
+                <DropdownMenuContent align="end" className="w-48 bg-[#0A0A0E] border-white/10 shadow-xl shadow-black/50">
                   <DropdownMenuItem asChild>
-                    <Link to="/profile" className="flex items-center gap-2 text-[13px]" data-testid="profile-link">
-                      <User className="w-3.5 h-3.5" />Profile
+                    <Link to="/profile" className="flex items-center gap-2.5 text-sm" data-testid="profile-link">
+                      <User className="w-4 h-4" />Profile
                     </Link>
                   </DropdownMenuItem>
-                  <DropdownMenuSeparator className="bg-white/[0.06]" />
+                  <DropdownMenuSeparator className="bg-white/10" />
                   <DropdownMenuItem
                     onClick={handleLogout}
-                    className="flex items-center gap-2 text-red-400 text-[13px]"
+                    className="flex items-center gap-2.5 text-red-400 text-sm"
                     data-testid="logout-btn"
                   >
-                    <LogOut className="w-3.5 h-3.5" />Logout
+                    <LogOut className="w-4 h-4" />Logout
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
             ) : (
               <div className="flex items-center gap-2">
                 <Link to="/login">
-                  <Button variant="ghost" data-testid="login-btn" className="text-[13px] text-zinc-400 hover:text-white hover:bg-white/[0.06] h-8 px-3">
+                  <Button variant="ghost" data-testid="login-btn" className="text-sm text-zinc-400 hover:text-white hover:bg-white/5 h-9 px-4">
                     Sign In
                   </Button>
                 </Link>
                 <Link to="/register">
-                  <Button data-testid="register-btn" className="bg-[#FF6B00] hover:bg-[#E55A00] text-white text-[13px] font-semibold h-8 px-4 rounded-md">
+                  <Button data-testid="register-btn" className="bg-[#00E5FF] hover:bg-[#80F2FF] text-black text-sm font-semibold h-9 px-5 rounded-lg shadow-[0_0_15px_rgba(0,229,255,0.3)] hover:shadow-[0_0_25px_rgba(0,229,255,0.5)] transition-all">
                     Get Started
                   </Button>
                 </Link>
@@ -121,7 +120,7 @@ export const Navbar = () => {
             {/* Mobile menu button */}
             {isAuthenticated && (
               <button
-                className="md:hidden p-1.5 rounded-md hover:bg-white/[0.06] transition-colors duration-200"
+                className="md:hidden p-2 rounded-lg hover:bg-white/5 transition-all"
                 onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
                 data-testid="mobile-menu-toggle"
               >
@@ -133,17 +132,17 @@ export const Navbar = () => {
 
         {/* Mobile Navigation */}
         {isAuthenticated && mobileMenuOpen && (
-          <div className="md:hidden py-3 border-t border-white/[0.06]">
+          <div className="md:hidden py-4 border-t border-white/10">
             {navLinks.map((link) => (
               <Link
                 key={link.to}
                 to={link.to}
                 data-testid={`mobile-nav-${link.label.toLowerCase().replace(' ', '-')}`}
                 onClick={() => setMobileMenuOpen(false)}
-                className={`flex items-center gap-3 px-3 py-2.5 rounded-md text-[13px] font-medium ${
+                className={`flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium ${
                   isActive(link.to)
-                    ? 'text-white bg-white/[0.06]'
-                    : 'text-zinc-500 hover:text-white hover:bg-white/[0.04]'
+                    ? 'text-white bg-white/5'
+                    : 'text-zinc-400 hover:text-white hover:bg-white/5'
                 }`}
               >
                 <link.icon className="w-4 h-4" />

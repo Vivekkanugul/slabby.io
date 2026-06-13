@@ -144,18 +144,18 @@ export default function Marketplace() {
   ];
 
   return (
-    <div className="min-h-screen bg-[#05050A] py-8" data-testid="marketplace-page">
+    <div className="min-h-screen bg-[#050508] py-8" data-testid="marketplace-page">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
           <div>
-            <h1 className="text-2xl font-bold text-white">Marketplace</h1>
+            <h1 className="font-heading text-2xl font-medium text-white">Marketplace</h1>
             <p className="text-zinc-400 mt-1">Browse and list cards for trading</p>
           </div>
           
           {isAuthenticated && (
             <Button
-              className="bg-[#FF6B00] hover:bg-[#E55A00]"
+              className="bg-[#00E5FF] text-black font-medium hover:bg-[#80F2FF] shadow-[0_0_15px_rgba(0,229,255,0.3)] transition-all"
               onClick={() => setShowCreate(true)}
               data-testid="list-card-btn"
             >
@@ -251,7 +251,7 @@ export default function Marketplace() {
                   List your first card to start trading!
                 </p>
                 <Button
-                  className="bg-[#FF6B00] hover:bg-[#E55A00]"
+                  className="bg-[#00E5FF] text-black hover:bg-[#80F2FF]"
                   onClick={() => setShowCreate(true)}
                 >
                   <Plus className="w-4 h-4 mr-2" />
@@ -417,7 +417,7 @@ export default function Marketplace() {
                     Cancel
                   </Button>
                   <Button
-                    className="flex-1 bg-[#FF6B00] hover:bg-[#E55A00]"
+                    className="flex-1 bg-[#00E5FF] text-black hover:bg-[#80F2FF]"
                     onClick={handleCreateCard}
                     disabled={submitting || !newCard.title.trim()}
                     data-testid="create-card-btn"
@@ -439,7 +439,7 @@ function CardItem({ card, isOwner, onPublish, getConditionLabel, getCategoryLabe
   
   return (
     <div 
-      className="bg-[#0A0A0C] border border-white/10 rounded-xl overflow-hidden hover:border-[#FF6B00]/30 transition-all group"
+      className="bg-[#0A0A0E] border border-white/10 rounded-xl overflow-hidden hover:border-[#00E5FF]/30 transition-all group"
       data-testid={`card-${card.id}`}
     >
       {/* Image */}
@@ -488,7 +488,7 @@ function CardItem({ card, isOwner, onPublish, getConditionLabel, getCategoryLabe
         
         {card.asking_price && (
           <div className="flex items-center gap-1 text-lg font-bold text-white mb-3">
-            <DollarSign className="w-4 h-4 text-[#FF6B00]" />
+            <DollarSign className="w-4 h-4 text-[#00E5FF]" />
             {card.asking_price.toLocaleString()}
           </div>
         )}
@@ -496,7 +496,7 @@ function CardItem({ card, isOwner, onPublish, getConditionLabel, getCategoryLabe
         {/* Actions */}
         {isOwner && isDraft ? (
           <Button
-            className="w-full bg-[#FF6B00] hover:bg-[#E55A00]"
+            className="w-full bg-[#00E5FF] text-black hover:bg-[#80F2FF]"
             size="sm"
             onClick={onPublish}
             data-testid={`publish-${card.id}`}

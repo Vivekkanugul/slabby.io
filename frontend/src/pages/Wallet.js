@@ -163,13 +163,13 @@ export default function Wallet() {
   }
 
   return (
-    <div className="min-h-screen bg-[#05050A] py-8" data-testid="wallet-page">
+    <div className="min-h-screen bg-[#050508] py-8" data-testid="wallet-page">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-2xl font-bold text-white flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-[#FF6B00]/10 flex items-center justify-center">
-              <WalletIcon className="w-5 h-5 text-[#FF6B00]" />
+          <h1 className="font-heading text-2xl font-medium text-white flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-[#00E5FF]/10 flex items-center justify-center">
+              <WalletIcon className="w-5 h-5 text-[#00E5FF]" />
             </div>
             My Wallet
           </h1>
@@ -178,12 +178,12 @@ export default function Wallet() {
 
         {/* Balance Cards */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-          <div className="bg-gradient-to-br from-[#FF6B00] to-[#FF9500] rounded-xl p-6" data-testid="available-balance">
+          <div className="bg-gradient-to-br from-[#00E5FF] to-[#00B4D8] rounded-xl p-6" data-testid="available-balance">
             <div className="flex items-center justify-between mb-4">
-              <span className="text-white/80 text-sm">Available Balance</span>
-              <DollarSign className="w-5 h-5 text-white/60" />
+              <span className="text-black/80 text-sm">Available Balance</span>
+              <DollarSign className="w-5 h-5 text-black/60" />
             </div>
-            <p className="text-3xl font-bold text-white">${wallet?.available_balance?.toFixed(2) || '0.00'}</p>
+            <p className="text-3xl font-bold text-black">${wallet?.available_balance?.toFixed(2) || '0.00'}</p>
           </div>
           
           <div className="bg-[#0A0A0C] border border-white/10 rounded-xl p-6" data-testid="escrow-balance">
@@ -379,7 +379,7 @@ export default function Wallet() {
                   Cancel
                 </Button>
                 <Button
-                  className="flex-1 bg-[#FF6B00] hover:bg-[#E55A00]"
+                  className="flex-1 bg-[#00E5FF] text-black hover:bg-[#80F2FF]"
                   onClick={handleWithdraw}
                   disabled={processing || !amount || parseFloat(amount) > wallet?.available_balance}
                   data-testid="confirm-withdraw-btn"
