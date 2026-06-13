@@ -146,14 +146,6 @@ export default function Landing() {
               animate={isHeroInView ? { opacity: 1, x: 0 } : {}}
               transition={{ duration: 0.8, delay: 0.2 }}
             >
-              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 border border-white/10 mb-6">
-                <span className="relative flex h-2 w-2">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#BCFF00] opacity-75"></span>
-                  <span className="relative inline-flex rounded-full h-2 w-2 bg-[#BCFF00]"></span>
-                </span>
-                <span className="text-sm text-zinc-300">{stats.total_users} traders online</span>
-              </div>
-
               <h1 className="text-5xl sm:text-6xl lg:text-7xl font-bold tracking-tight mb-6 leading-[1.1]">
                 The Future of
                 <br />
@@ -380,26 +372,26 @@ export default function Landing() {
       </section>
 
       {/* Features Bento Grid */}
-      <section id="features" className="py-16 lg:py-20 px-6">
+      <section id="features" className="py-6 px-6">
         <div className="max-w-7xl mx-auto">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
-            className="text-center mb-16"
+            className="text-center mb-6"
           >
-            <span className="inline-block px-4 py-1 rounded-full bg-[#BCFF00]/10 text-[#BCFF00] text-sm font-medium mb-4">
+            <span className="inline-block px-4 py-1 rounded-full bg-[#BCFF00]/10 text-[#BCFF00] text-sm font-medium mb-2">
               Why Slabby?
             </span>
-            <h2 className="text-4xl sm:text-5xl font-bold mb-4">
+            <h2 className="text-3xl sm:text-4xl font-bold mb-2">
               Built Different
             </h2>
-            <p className="text-zinc-400 max-w-2xl mx-auto">
+            <p className="text-zinc-400 max-w-2xl mx-auto text-sm">
               Every feature designed for serious collectors who demand transparency.
             </p>
           </motion.div>
 
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
             {features.map((feature, index) => (
               <motion.div
                 key={feature.title}
@@ -426,23 +418,23 @@ export default function Landing() {
       </section>
 
       {/* How It Works */}
-      <section className="py-16 lg:py-20 px-6 bg-gradient-to-b from-transparent via-white/[0.02] to-transparent">
+      <section className="py-6 px-6">
         <div className="max-w-7xl mx-auto">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
-            className="text-center mb-16"
+            className="text-center mb-5"
           >
-            <span className="inline-block px-4 py-1 rounded-full bg-emerald-500/10 text-emerald-500 text-sm font-medium mb-4">
+            <span className="inline-block px-4 py-1 rounded-full bg-emerald-500/10 text-emerald-500 text-sm font-medium mb-2">
               Simple Process
             </span>
-            <h2 className="text-4xl sm:text-5xl font-bold mb-4">
+            <h2 className="text-3xl sm:text-4xl font-bold">
               Start in 3 Steps
             </h2>
           </motion.div>
 
-          <div className="grid md:grid-cols-3 gap-8">
+          <div className="grid md:grid-cols-3 gap-4">
             {[
               { step: '01', title: 'List Your Cards', desc: 'Upload photos, set prices. Accept trades, cash, or both.', icon: BarChart3, color: 'from-[#BCFF00] to-emerald-500' },
               { step: '02', title: 'Trade or Razz', desc: 'Negotiate P2P or host provably fair raffles.', icon: Shuffle, color: 'from-violet-500 to-purple-600' },
@@ -472,23 +464,23 @@ export default function Landing() {
       </section>
 
       {/* Testimonials */}
-      <section className="py-16 lg:py-20 px-6">
+      <section className="py-6 px-6">
         <div className="max-w-7xl mx-auto">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
-            className="text-center mb-16"
+            className="text-center mb-5"
           >
-            <span className="inline-block px-4 py-1 rounded-full bg-violet-500/10 text-violet-500 text-sm font-medium mb-4">
+            <span className="inline-block px-4 py-1 rounded-full bg-violet-500/10 text-violet-500 text-sm font-medium mb-2">
               Testimonials
             </span>
-            <h2 className="text-4xl sm:text-5xl font-bold mb-4">
+            <h2 className="text-3xl sm:text-4xl font-bold">
               Loved by Collectors
             </h2>
           </motion.div>
 
-          <div className="grid md:grid-cols-3 gap-6">
+          <div className="grid md:grid-cols-3 gap-4">
             {testimonials.map((t, index) => (
               <motion.div
                 key={t.name}
@@ -513,7 +505,7 @@ export default function Landing() {
       </section>
 
       {/* Final CTA */}
-      <section className="py-20 lg:py-24 px-6 relative overflow-hidden">
+      <section className="py-10 px-6 relative overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-r from-[#BCFF00]/10 via-transparent to-violet-500/10" />
         <motion.div
           initial={{ opacity: 0, y: 30 }}
