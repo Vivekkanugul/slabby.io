@@ -1,202 +1,124 @@
-# Slabby - Trading & Razz Platform
-**Project Marvel - Event-Sourced Architecture**
+# Slabby - Product Requirements Document
 
 ## Overview
-Slabby is a premier P2P trading and provably fair razz (raffle) platform for collectible cards. Built with event-sourced architecture for complete audit trails and transparency.
+**Slabby** is a world-class P2P trading and Razz (raffle) platform for collectible cards. Built with Apple-standard UI/UX, Event-Sourced Architecture, and provably fair cryptographic systems.
+
+## Brand
+- **Name**: Slabby
+- **Primary Color**: `#BCFF00` (Lime Green)
+- **Theme**: Dark fintech aesthetic with glass-morphism and Framer Motion animations
+
+## Tech Stack
+- **Frontend**: React, TailwindCSS, Framer Motion, Shadcn/UI
+- **Backend**: FastAPI (Event-Sourced Architecture)
+- **Database**: MongoDB (Event Store)
+- **Payments**: Stripe Connect
 
 ## Core Features
 
-### 1. Authentication
-- JWT-based authentication
-- User registration with email/password
-- Profile management with display names
-- Token stored as `slabby_token` in localStorage
+### 1. Landing Page ✅
+- Continuous flowing design (no section gaps)
+- Bento grid layout for steps/testimonials
+- Live stats from API
+- Horizontal card scroll preview
+- Parallax background effects
 
-### 2. Wallet System
-- Digital wallet for each user
-- **Stripe Integration** for real deposits (test mode)
-- Predefined deposit packages: $25, $50, $100, $250, $500
-- Withdrawal functionality (MOCKED - Stripe Connect pending)
-- Balance tracking: available, pending, escrow
-- Full transaction history
-- Event-sourced ledger
+### 2. Live Razz Platform ✅
+- Real-time card flip animations
+- Suspenseful random reveal order
+- Winner celebration with particle effects
+- Crown icon on winning spot
+- "Verify Fairness" provably fair verification
+- Browse/Live view toggle
+- Progress bars showing spots filled
 
-### 3. Card Marketplace
-- List cards for sale with details:
-  - Title, player name, team, year, set
-  - Category (basketball, baseball, football, hockey, pokemon, other)
-  - Condition (raw, PSA 10/9/8, BGS 10/9.5)
-  - Asking price
-  - Images
-- Draft → Published workflow
-- Search and filter by category
-- Card status: draft, available, in_trade, in_razz, sold
+### 3. Marketplace ✅
+- Card listings with pricing
+- Filter and search
+- Card detail view
 
-### 4. P2P Trading
-- Multi-asset trade support (cards + cash)
-- Trade types: cards_only, cash_only, cards_and_cash, cash_for_cards
-- Trade workflow: pending → countered → accepted/rejected → in_escrow → completed
-- Escrow protection for both parties
+### 4. Wallet ✅
+- Stripe Connect deposits
+- Balance display
+- Transaction history
 
-### 5. Provably Fair Razz (Raffle)
-- Cryptographically verifiable drawings
-- Server seed hash published before draw
-- Formula: `Winner = SHA256(server_seed + client_seed) mod total_spots`
-- Full verification endpoint for completed razzes
-- Spot purchasing with wallet balance
-- Max spots per user limit
+### 5. P2P Trading (Scaffolded)
+- Trade proposals
+- Multi-card + cash offers
+- Escrow system
 
-### 6. Real-Time WebSocket Notifications
-- Trade updates (offer, counter, accept, reject)
-- Razz updates (spot purchased, draw complete)
-- Wallet balance changes
-- Public broadcast for marketplace activity
+## Architecture
 
-### 7. Admin Portal
-- Platform statistics dashboard
-- User management (suspend/unsuspend)
-- Event log viewer
-- Role-based access (admin, super_admin)
+### Event-Sourced Backend
+All mutations are stored as immutable events:
+- UserCreated, CardListed, TradePropoed, RazzCreated, etc.
+- State reconstructed from event log
+- Full audit trail
 
-### 8. eBay Market Data (Prepared)
-- Search eBay listings for price comparison
-- Completed/sold item price history
-- Requires `EBAY_APP_ID` environment variable
+### Key API Endpoints
+- `/api/auth/*` - Authentication
+- `/api/cards/*` - Card CRUD
+- `/api/razz/*` - Razz operations
+- `/api/wallet/*` - Wallet/payments
+- `/api/trades/*` - P2P trades
+- `/api/uploads/` - Image uploads
 
-## Technical Architecture
+## Completed Work (December 2025)
 
-### Backend (FastAPI)
-```
-/app/backend/
-├── server.py           # Main app with lifespan
-├── routes/
-│   ├── auth.py         # Authentication endpoints
-│   ├── cards.py        # Card CRUD
-│   ├── trades.py       # P2P trading
-│   ├── razz.py         # Razz (raffle) system
-│   ├── wallet.py       # Banking/balances
-│   ├── payments.py     # Stripe integration
-│   ├── websocket.py    # Real-time notifications
-│   ├── ebay.py         # eBay market data
-│   └── admin.py        # Admin portal
-├── services/
-│   ├── event_store.py  # Append-only event log
-│   ├── user_service.py
-│   ├── card_service.py
-│   ├── trade_service.py
-│   ├── razz_service.py
-│   └── wallet_service.py
-├── models/
-│   └── (Pydantic schemas)
-└── seed_accounts.py    # Demo account seeder
-```
+### Session 1-5
+- [x] Complete backend refactor to Event-Sourced Architecture
+- [x] Stripe Connect integration with webhooks
+- [x] Demo account seeding (demo@slabby.com, admin@slabby.com)
+- [x] Apple-standard UI redesign with #BCFF00 theme
+- [x] Rich landing page with live stats
 
-### Frontend (React)
-```
-/app/frontend/src/
-├── pages/
-│   ├── Landing.js      # Slabby hero page
-│   ├── Login.js
-│   ├── Register.js
-│   ├── Marketplace.js  # Card browse & listing
-│   ├── CardDetail.js
-│   ├── Trades.js       # P2P trade management
-│   ├── Razz.js         # Raffle browse & purchase
-│   └── Wallet.js       # Banking with Stripe
-├── components/
-│   └── Layout/Navbar.js # Slabby navigation
-└── lib/api.js          # API client
-```
+### Session 6 (Current)
+- [x] Removed landing page gaps - continuous flowing design
+- [x] Removed "Made with Emergent" watermark
+- [x] Removed "traders online" badge
+- [x] Built immersive Live Razz experience with:
+  - 3D flip card animations
+  - Random suspenseful reveal
+  - Winner celebration with particles
+  - Provably fair verification UI
 
-## API Endpoints
+## Pending Tasks
 
-### Auth
-- `POST /api/auth/register` - Create account
-- `POST /api/auth/login` - Login
-- `GET /api/auth/me` - Get current user
+### P0 (Critical)
+- [ ] Integrate ImageUploader.js into card creation flow
+- [ ] Integrate InteractiveCard.js into Marketplace/Landing
+- [ ] Wire uploads.py to actually save files
 
-### Cards
-- `GET /api/cards` - Browse marketplace
-- `GET /api/cards/my-cards` - User's cards
-- `POST /api/cards` - Create card (draft)
-- `POST /api/cards/{id}/publish` - Publish to marketplace
+### P1 (High Priority)
+- [ ] Mobile responsive refinements
+- [ ] Admin Portal UI (backend routes exist)
+- [ ] WebSocket real-time notifications (backend exists)
+- [ ] P2P Trade Service UI
+- [ ] Stripe Connect payouts/withdrawals
 
-### Trades
-- `POST /api/trades` - Create trade offer
-- `GET /api/trades` - User's trades
-- `POST /api/trades/{id}/accept` - Accept trade
-- `POST /api/trades/{id}/reject` - Reject trade
-
-### Razz
-- `POST /api/razz` - Create razz (draft)
-- `GET /api/razz` - Browse active razzes
-- `POST /api/razz/{id}/publish` - Activate razz
-- `POST /api/razz/{id}/purchase` - Buy spots
-- `POST /api/razz/{id}/draw` - Execute draw
-- `GET /api/razz/{id}/verify` - Verify fairness
-
-### Payments (Stripe)
-- `GET /api/payments/packages` - Get deposit packages
-- `POST /api/payments/deposit/checkout` - Create Stripe session
-- `GET /api/payments/deposit/status/{session_id}` - Check payment
-- `POST /api/webhook/stripe` - Stripe webhook
-
-### Wallet
-- `GET /api/wallet` - Get wallet
-- `POST /api/wallet/withdraw` - Withdraw funds
-- `GET /api/wallet/transactions` - Transaction history
-
-### WebSocket
-- `ws://host/ws` - Public broadcast
-- `ws://host/ws/user?token=xxx` - Authenticated notifications
-
-### eBay (requires EBAY_APP_ID)
-- `GET /api/ebay/status` - Check configuration
-- `GET /api/ebay/search` - Search listings
-- `GET /api/ebay/price-history` - Get sold prices
-
-## Design
-- Brand color: Orange `#FF6B00`
-- Dark theme: `#05050A` background
-- Slabby logo: Orange gradient "S" badge
-- Navigation: Marketplace, Trades, Razz, Wallet
-
-## Demo Accounts
-See `/app/memory/test_credentials.md`
-- **Demo User**: demo@slabby.com / demo123 ($1,000 balance, 3 cards)
-- **Admin**: admin@slabby.com / admin123 ($10,000 balance)
-
-## Status
-
-### Completed (P0 + P1)
-- [x] Event-sourced data architecture
-- [x] User authentication (JWT)
-- [x] Wallet system with transactions
-- [x] Card marketplace (CRUD + publish)
-- [x] P2P trade framework
-- [x] Provably fair razz engine
-- [x] Frontend with Slabby branding
-- [x] **Stripe Checkout integration** (deposits)
-- [x] **WebSocket real-time notifications**
-- [x] **eBay API structure** (ready for credentials)
-- [x] **Demo accounts seeded**
-
-### Pending (P2)
-- [ ] Stripe Connect for withdrawals/payouts
-- [ ] Mobile-responsive design refinements
-- [ ] Advanced search filters
-- [ ] Trade history analytics
-- [ ] Razz statistics dashboard
-
-## Integrations
-
-### Stripe (ACTIVE - Test Mode)
-- Deposit packages via Stripe Checkout
-- Test card: 4242 4242 4242 4242
-- Webhook handling at `/api/webhook/stripe`
-
-### eBay (PREPARED)
-Set `EBAY_APP_ID` in `/app/backend/.env` to enable market data.
+### P2 (Backlog)
+- [ ] eBay API integration (pending user credentials)
 
 ## Test Credentials
-See `/app/memory/test_credentials.md`
+- **User**: demo@slabby.com / demo123
+- **Admin**: admin@slabby.com / admin123
+
+## File Structure
+```
+/app/
+├── backend/
+│   ├── server.py (FastAPI with routers)
+│   ├── seed_accounts.py
+│   ├── models/ (Pydantic models)
+│   ├── routes/ (auth, cards, trades, razz, wallet, admin, payments, websocket, uploads)
+│   └── services/ (Event store, business logic)
+├── frontend/
+│   ├── src/
+│   │   ├── components/ (ImageUploader.js, InteractiveCard.js, ui/)
+│   │   ├── pages/ (Landing.js, Marketplace.js, Wallet.js, Razz.js, etc.)
+│   │   ├── context/ (AuthContext.js)
+│   │   └── lib/api.js
+└── memory/
+    ├── PRD.md
+    └── test_credentials.md
+```
