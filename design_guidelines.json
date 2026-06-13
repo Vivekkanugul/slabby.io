@@ -1,104 +1,119 @@
 {
-  "theme": "dark",
-  "typography": {
-    "headings": "Chivo",
-    "body": "Inter",
-    "monospace": "JetBrains Mono",
-    "rules": [
-      "Use tight letter spacing (tracking-tight) for headings to enforce the premium, technical look.",
-      "Overlines and table column headers MUST be uppercase, tiny text (text-xs), and have wide spacing (tracking-[0.2em]).",
-      "Use JetBrains Mono for all numeric data: ticker symbols, prices, price changes, card grades, and stats to give a stock-market feel.",
-      "Headings should use font-bold or font-black to contrast against the data-dense body."
-    ]
+  "theme_and_archetype": {
+    "domain": "Trading Platform & Marketplace",
+    "theme": "dark",
+    "archetype": "5 (Luxury / Apple Variant)",
+    "description": "High-end, premium 'Apple-standard' UI with a deep black background and cyan/teal accents. Heavily uses crystal glassmorphism, crisp typography, and fluid micro-interactions."
   },
   "colors": {
-    "background": "#0A0A0C",
-    "foreground": "#FAFAFA",
-    "card": "#121214",
-    "card_foreground": "#FAFAFA",
-    "popover": "#121214",
-    "popover_foreground": "#FAFAFA",
-    "primary": "#007AFF",
-    "primary_foreground": "#FFFFFF",
-    "secondary": "#1E1E24",
-    "secondary_foreground": "#FAFAFA",
-    "muted": "#1E1E24",
-    "muted_foreground": "#A1A1AA",
-    "accent": "#00E5FF",
-    "accent_foreground": "#0A0A0C",
-    "destructive": "#FF3B30",
-    "success": "#34C759",
-    "border": "#1E1E24",
-    "input": "#1E1E24",
-    "ring": "#00E5FF",
-    "chart_bullish": "#34C759",
-    "chart_bearish": "#FF3B30"
+    "background": {
+      "main": "#050508",
+      "surface": "#0A0A0E",
+      "elevated": "#121216"
+    },
+    "text": {
+      "primary": "#FFFFFF",
+      "secondary": "#A1A1AA",
+      "muted": "#52525B"
+    },
+    "accents": {
+      "primary": "#00E5FF",
+      "secondary": "#00B4D8",
+      "hover": "#80F2FF",
+      "profit": "#34C759",
+      "loss": "#FF3B30",
+      "warning": "#FF9F0A"
+    },
+    "borders": {
+      "default": "rgba(255, 255, 255, 0.08)",
+      "highlight": "rgba(255, 255, 255, 0.15)",
+      "glass": "rgba(255, 255, 255, 0.1)"
+    }
   },
-  "visual_enhancers": {
-    "surface": [
-      "Cards: Go cardless where possible. When cards are needed, use Flat Solid #121214 with a crisp 1px border (#ffffff/10 or #1E1E24). DO NOT use soft drop shadows. Use inner borders or 1px subtle glow for focus states.",
-      "Headers/Nav: Crystal Glassmorphism. Background must be black with 60%-80% opacity (bg-black/80), heavy blur (backdrop-blur-xl), and a 1px delicate bottom border (border-white/10). NEVER use 100% transparency.",
-      "AI Elements (Research Terminal): Utilize the 'Tracing Beam' or a glowing cyan border (00E5FF) to highlight AI-generated insights, valuations, or the hold projector."
-    ],
-    "textures": [
-      "Apply a subtle static noise/grain overlay across the app background (fixed, pointer-events-none, opacity ~2%) to eliminate digital flatness and create a tactile, premium finish."
-    ],
-    "components": [
-      "Buttons: Pill-shaped or sharp rectangular buttons with 1px borders. Primary actions should use #007AFF or #00E5FF with high-contrast text.",
-      "Badges: Use JetBrains Mono inside minimalist pill badges for card grades (e.g., PSA 10, BGS 9.5).",
-      "Tables: High-density rows, border-b border-border/40, right-align numeric data, use up/down Phosphor arrows in success/destructive colors for price changes."
-    ]
+  "typography": {
+    "headings": {
+      "font_family": "'Outfit', sans-serif",
+      "strategy": "Premium, geometric scaling. Tracking tight on large sizes.",
+      "sizes": {
+        "h1": "text-5xl sm:text-6xl tracking-tighter font-medium",
+        "h2": "text-3xl sm:text-4xl tracking-tight font-medium",
+        "h3": "text-xl sm:text-2xl font-medium",
+        "h4": "text-lg font-medium"
+      }
+    },
+    "body": {
+      "font_family": "system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
+      "strategy": "Apple standard legibility. High contrast, clean.",
+      "sizes": {
+        "base": "text-base leading-relaxed",
+        "small": "text-sm text-secondary",
+        "micro": "text-xs uppercase tracking-[0.2em] font-medium"
+      }
+    }
   },
-  "grids_and_layouts": {
-    "dashboard": "MODE B: High Density Grid. Use grid-cols-1 md:grid-cols-3 lg:grid-cols-4 or 12-col grids. Gaps should be tight (gap-4 or gap-6) to pack data efficiently.",
-    "spacing": "Inside containers: Use p-4 to p-6. Between sections: Use generous spacing (py-8 or py-12).",
-    "structure": "Mobile-first responsive. Override default stretch with align-items: start where necessary. Elements within a dashboard row must stretch to equal height (h-full on children)."
+  "spacing_and_layout": {
+    "strategy": "Generous Spacing Philosophy. Bento Grids for Dashboard.",
+    "containers": {
+      "padding": "p-6 md:p-8 lg:p-12",
+      "gap": "gap-6 lg:gap-8"
+    },
+    "grid_modes": {
+      "marketing": "grid-cols-1 md:grid-cols-8 lg:grid-cols-12 gap-8. Wide, asymmetrical.",
+      "dashboard": "grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-6. Dense, precise."
+    }
+  },
+  "surfaces_and_effects": {
+    "glassmorphism": {
+      "background": "bg-black/60",
+      "blur": "backdrop-blur-2xl backdrop-saturate-150",
+      "border": "border border-white/10",
+      "shadow": "shadow-[0_8px_32px_rgba(0,0,0,0.4)]"
+    },
+    "cards": {
+      "default": "bg-[#0A0A0E] border border-white/5 rounded-2xl",
+      "hover": "-translate-y-1 shadow-[0_8px_32px_rgba(0,229,255,0.1)] border-white/15 transition-all duration-300"
+    },
+    "buttons": {
+      "primary": "bg-[#00E5FF] text-black font-medium hover:bg-[#80F2FF] shadow-[0_0_20px_rgba(0,229,255,0.3)] transition-all",
+      "secondary": "bg-white/5 text-white border border-white/10 hover:bg-white/10 transition-all backdrop-blur-md"
+    }
   },
   "motion": {
-    "rules": [
-      "Hover states: Lighter background, border color highlight, text color shift. Must explicitly set text color on hover.",
-      "Transitions: Use specific transition properties (e.g., transition-colors duration-200 ease-in-out), NOT 'transition-all'.",
-      "Data Loading: Use skeleton loaders with a sleek, dark-grey shimmer. Avoid spinning loaders unless inside a button.",
-      "AI Processing: Use 'scanning line' or 'typing effect' for AI valuations/research to feel computational."
+    "scrolling": "MANDATORY: Use lenis library for smooth momentum scrolling.",
+    "page_transitions": "Framer Motion: opacity and subtle y-axis translation on enter.",
+    "micro_interactions": "Scale transform (scale: 0.98) on button click. Hover effects on all cards."
+  },
+  "components": {
+    "navigation": "Sticky crystal glass header (`bg-black/60 backdrop-blur-2xl border-b border-white/10`). Logo left, links center, CTA right. No hamburger on desktop.",
+    "hero": "Holographic cards floating in 3D (Framer motion). Gradient text for key value prop. Dark overlay over subtle ambient background video/image.",
+    "feature_cards": "Bento box layout (Tetris Grid). Alternating spans. Hover effects reveal teal borders.",
+    "stats_section": "Massive typography (text-6xl+). Monospace numbers. Animated counter.",
+    "auth": "Glass panel over abstract cyan blurred orbs. Simple, high-conversion.",
+    "dashboard_widgets": "Flat backgrounds, 1px subtle borders. Dense layout, no unnecessary padding. High contrast table rows."
+  },
+  "assets": {
+    "icons": "lucide-react (Premium, simple, neutral)",
+    "images": [
+      {
+        "category": "hero_background",
+        "url": "https://images.pexels.com/photos/8811594/pexels-photo-8811594.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940",
+        "description": "Premium Pokemon cards for holographic tilt effects in hero"
+      },
+      {
+        "category": "feature_showcase",
+        "url": "https://images.pexels.com/photos/9661256/pexels-photo-9661256.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940",
+        "description": "Vintage collectible cards for razz and trading preview"
+      }
     ]
   },
-  "accessibility": {
-    "rules": [
-      "Minimum 4.5:1 contrast for text. Gray body text must be at least #A1A1AA against #0A0A0C.",
-      "DO NOT rely solely on Success (Emerald) and Destructive (Red) colors. Always pair them with directional arrows or +/- symbols.",
-      "Interactive elements must have distinct focus rings (focus:ring-2 focus:ring-[#00E5FF]).",
-      "Include aria-hidden='true' for decorative elements and SVGs."
-    ]
-  },
-  "3d_libraries": {
-    "charts": "Recharts. Mandatory for stock-like charts (line, area, candlesticks if possible, bar). Customize tooltips with Glassmorphism (bg-black/90, backdrop-blur, border-white/10, text-white).",
-    "particles": "TSParticles (Optional). Can be used lightly in the AI Research Terminal header for a 'neural net' or 'data point' aesthetic."
-  },
-  "image_urls": [
-    {
-      "url": "https://images.unsplash.com/photo-1551306667-f32e7af055f2?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjA1MDZ8MHwxfHNlYXJjaHwyfHxiYXNlYmFsbCUyMHRyYWRpbmclMjBjYXJkfGVufDB8fHx8MTc3NDIyODQxM3ww&ixlib=rb-4.1.0&q=85",
-      "description": "Assorted trading cards spread out",
-      "category": "Marketplace generic placeholder / Card stack visual"
-    },
-    {
-      "url": "https://images.unsplash.com/photo-1547534171-243ab161cd20?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjAzMzV8MHwxfHNlYXJjaHwzfHxiYXNrZXRiYWxsJTIwcGxheWVyJTIwYWN0aW9ufGVufDB8fHx8MTc3NDIyODQxNHww&ixlib=rb-4.1.0&q=85",
-      "description": "Basketball near player action",
-      "category": "Player portrait / Individual card placeholder"
-    }
-  ],
-  "UNIVERSAL_GUIDELINES_FOR_MAIN_AGENT": [
-    "Strictly adhere to the dark theme (#0A0A0C). NEVER introduce random white backgrounds or generic light mode elements. The platform must feel like an elite dark fintech terminal.",
-    "Do not center align the app container text (avoid `.App { text-align: center; }`). Keep text left-aligned for data readability.",
-    "Install and use @phosphor-icons/react for all icons. Phosphor icons are mandatory for the data-dense, technical look. NEVER use emojis.",
-    "Import Google Fonts: 'Chivo', 'Inter', and 'JetBrains Mono'. Configure them in tailwind.config.js.",
-    "Create depth through layered z-index hierarchy and 1px borders, rather than muddy drop shadows.",
-    "Never use complete transparent backgrounds for headers, overlays, or sticky elements. Always use bg-black/60 (or darker) with backdrop-blur.",
-    "Every interactive element needs a micro-animation (hover, focus, active). Apply transitions specifically (e.g., transition-colors, transition-transform). DO NOT use `transition: all`.",
-    "All interactive and key informational elements MUST include a `data-testid` attribute using kebab-case role-based naming (e.g., `data-testid=\"buy-card-button\"`).",
-    "Use `sonner` for toast notifications. Ensure the toast styling matches the dark fintech aesthetic (black bg, 1px border).",
-    "When using Shadcn UI, aggressively customize the CSS to remove the default 'Vercel look' and replace it with our sharp, high-contrast, stock-market styling.",
-    "For the AI Research Terminal and Analytics pages, use Shadcn/Recharts for data visualization. Charts must use the specific #007AFF, #00E5FF, #34C759, and #FF3B30 colors for data points.",
-    "NEVER guess missing parameters in tool calls. DO NOT use placeholders like 'John Doe' without styling them contextually as realistic data."
-  ],
-  "instructions_to_main_agent": "Read this JSON. Setup the Tailwind config with these colors and fonts. Build the layout with the Sidebar/Navbar. Implement the Marketplace, Portfolio, Analytics, and AI Research pages using the High-Density Grid layout. Use Recharts for all graphs, styled to look like a Bloomberg terminal."
+  "testing": "All interactive elements MUST include a `data-testid` attribute (kebab-case, role-based).",
+  "instructions_to_main_agent": [
+    "Install `lenis` for smooth scrolling (MANDATORY).",
+    "Install `framer-motion` for complex interactions.",
+    "Replace existing Tailwind Orange with Cyan/Teal (#00E5FF).",
+    "Update `tailwind.config.js` to include the new colors and 'Outfit' font.",
+    "Refactor Landing Page to use Bento grids, Crystal Glassmorphism, and large typography.",
+    "Ensure all components use Shadcn UI but heavily customized to match the Apple-standard dark glass theme.",
+    "Ensure the hero image uses the provided Pexels links and has a `bg-black/50` overlay to preserve readability."
+  ]
 }
