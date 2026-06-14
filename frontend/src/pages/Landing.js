@@ -12,11 +12,11 @@ const CARD_IMAGES = [
 const SLAB_PRICES = ['$4,299', '$2,150', '$8,750'];
 const SLAB_GRADES = ['PSA 10', 'BGS 9.5', 'CGC 10'];
 
-// Particle field - cursor reactive
+// Particle field - enhanced cursor reactive with stronger effect
 const ParticleField = () => {
   const canvasRef = useRef(null);
   const particles = useRef([]);
-  const mouse = useRef({ x: 0, y: 0 });
+  const mouse = useRef({ x: -1000, y: -1000 });
   const animationRef = useRef(null);
 
   useEffect(() => {
@@ -31,44 +31,56 @@ const ParticleField = () => {
     resize();
     window.addEventListener('resize', resize);
 
-    // Initialize particles
+    // More particles for denser effect
     particles.current = [];
-    for (let i = 0; i < 50; i++) {
+    const particleCount = Math.min(80, Math.floor((window.innerWidth * window.innerHeight) / 15000));
+    for (let i = 0; i < particleCount; i++) {
       particles.current.push({
         x: Math.random() * canvas.width,
         y: Math.random() * canvas.height,
-        vx: 0,
-        vy: 0,
-        size: Math.random() * 2 + 0.5,
-        alpha: Math.random() * 0.4 + 0.1,
+        vx: (Math.random() - 0.5) * 0.5,
+        vy: (Math.random() - 0.5) * 0.5,
+        size: Math.random() * 2.5 + 1,
+        alpha: Math.random() * 0.5 + 0.2,
+        pulseOffset: Math.random() * Math.PI * 2,
       });
     }
 
     const handleMouse = (e) => {
       mouse.current = { x: e.clientX, y: e.clientY };
     };
+    const handleMouseLeave = () => {
+      mouse.current = { x: -1000, y: -1000 };
+    };
     window.addEventListener('mousemove', handleMouse);
+    window.addEventListener('mouseleave', handleMouseLeave);
 
+    let time = 0;
     const animate = () => {
+      time += 0.01;
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       
       particles.current.forEach((p, i) => {
-        // Mouse attraction
+        // Mouse attraction - stronger effect
         const dx = mouse.current.x - p.x;
         const dy = mouse.current.y - p.y;
         const dist = Math.sqrt(dx * dx + dy * dy);
         
-        if (dist < 150 && dist > 0) {
-          const force = (150 - dist) / 150;
-          p.vx += (dx / dist) * force * 0.2;
-          p.vy += (dy / dist) * force * 0.2;
+        if (dist < 200 && dist > 0) {
+          const force = (200 - dist) / 200;
+          p.vx += (dx / dist) * force * 0.4;
+          p.vy += (dy / dist) * force * 0.4;
         }
+        
+        // Gentle floating motion
+        p.vx += Math.sin(time + p.pulseOffset) * 0.01;
+        p.vy += Math.cos(time + p.pulseOffset) * 0.01;
         
         // Apply velocity with damping
         p.x += p.vx;
         p.y += p.vy;
-        p.vx *= 0.95;
-        p.vy *= 0.95;
+        p.vx *= 0.96;
+        p.vy *= 0.96;
         
         // Wrap around edges
         if (p.x < 0) p.x = canvas.width;
@@ -76,24 +88,52 @@ const ParticleField = () => {
         if (p.y < 0) p.y = canvas.height;
         if (p.y > canvas.height) p.y = 0;
         
-        // Draw particle
+        // Pulse size
+        const pulse = Math.sin(time * 2 + p.pulseOffset) * 0.3 + 1;
+        const currentSize = p.size * pulse;
+        
+        // Draw particle with glow
+        const gradient = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, currentSize * 3);
+        gradient.addColorStop(0, `rgba(188, 255, 0, ${p.alpha})`);
+        gradient.addColorStop(0.5, `rgba(188, 255, 0, ${p.alpha * 0.3})`);
+        gradient.addColorStop(1, 'rgba(188, 255, 0, 0)');
+        
         ctx.beginPath();
-        ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+        ctx.arc(p.x, p.y, currentSize * 3, 0, Math.PI * 2);
+        ctx.fillStyle = gradient;
+        ctx.fill();
+        
+        // Solid core
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, currentSize, 0, Math.PI * 2);
         ctx.fillStyle = `rgba(188, 255, 0, ${p.alpha})`;
         ctx.fill();
         
-        // Draw connections
+        // Draw connections to nearby particles
         particles.current.forEach((p2, j) => {
           if (j <= i) return;
           const d = Math.sqrt((p.x - p2.x) ** 2 + (p.y - p2.y) ** 2);
-          if (d < 80) {
+          if (d < 120) {
+            const lineAlpha = (1 - d / 120) * 0.15;
             ctx.beginPath();
             ctx.moveTo(p.x, p.y);
             ctx.lineTo(p2.x, p2.y);
-            ctx.strokeStyle = `rgba(188, 255, 0, ${(1 - d / 80) * 0.08})`;
+            ctx.strokeStyle = `rgba(188, 255, 0, ${lineAlpha})`;
+            ctx.lineWidth = 1;
             ctx.stroke();
           }
         });
+        
+        // Extra bright connection to mouse
+        if (dist < 200 && dist > 0) {
+          const lineAlpha = (1 - dist / 200) * 0.2;
+          ctx.beginPath();
+          ctx.moveTo(p.x, p.y);
+          ctx.lineTo(mouse.current.x, mouse.current.y);
+          ctx.strokeStyle = `rgba(188, 255, 0, ${lineAlpha})`;
+          ctx.lineWidth = 1;
+          ctx.stroke();
+        }
       });
       
       animationRef.current = requestAnimationFrame(animate);
@@ -103,6 +143,7 @@ const ParticleField = () => {
     return () => {
       window.removeEventListener('resize', resize);
       window.removeEventListener('mousemove', handleMouse);
+      window.removeEventListener('mouseleave', handleMouseLeave);
       cancelAnimationFrame(animationRef.current);
     };
   }, []);
