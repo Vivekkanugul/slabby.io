@@ -386,14 +386,14 @@ export default function Landing() {
 
             {/* Main headline */}
             <h1 className="text-5xl sm:text-6xl lg:text-7xl font-bold tracking-tight mb-6">
-              <span className="text-white">Trade slabs.</span>
+              <span className="text-white">Trade. Razz. Collect.</span>
               <br />
-              <span className="text-[#BCFF00]">Win big.</span>
+              <span className="text-[#BCFF00]">All in one vault.</span>
             </h1>
 
             {/* Subheadline */}
             <p className="text-lg sm:text-xl text-zinc-400 mb-10 max-w-xl mx-auto">
-              The premium marketplace for graded cards. P2P trading, provably fair raffles, instant payouts.
+              The only marketplace you need for graded slabs. Buy, sell, trade, or try your luck in provably fair raffles.
             </p>
 
             {/* CTAs */}
