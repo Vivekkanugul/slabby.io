@@ -12,6 +12,104 @@ const CARD_IMAGES = [
 const SLAB_PRICES = ['$4,299', '$2,150', '$8,750'];
 const SLAB_GRADES = ['PSA 10', 'BGS 9.5', 'CGC 10'];
 
+// Particle field - cursor reactive
+const ParticleField = () => {
+  const canvasRef = useRef(null);
+  const particles = useRef([]);
+  const mouse = useRef({ x: 0, y: 0 });
+  const animationRef = useRef(null);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    
+    const resize = () => {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+    };
+    resize();
+    window.addEventListener('resize', resize);
+
+    // Initialize particles
+    particles.current = [];
+    for (let i = 0; i < 50; i++) {
+      particles.current.push({
+        x: Math.random() * canvas.width,
+        y: Math.random() * canvas.height,
+        vx: 0,
+        vy: 0,
+        size: Math.random() * 2 + 0.5,
+        alpha: Math.random() * 0.4 + 0.1,
+      });
+    }
+
+    const handleMouse = (e) => {
+      mouse.current = { x: e.clientX, y: e.clientY };
+    };
+    window.addEventListener('mousemove', handleMouse);
+
+    const animate = () => {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      
+      particles.current.forEach((p, i) => {
+        // Mouse attraction
+        const dx = mouse.current.x - p.x;
+        const dy = mouse.current.y - p.y;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        
+        if (dist < 150 && dist > 0) {
+          const force = (150 - dist) / 150;
+          p.vx += (dx / dist) * force * 0.2;
+          p.vy += (dy / dist) * force * 0.2;
+        }
+        
+        // Apply velocity with damping
+        p.x += p.vx;
+        p.y += p.vy;
+        p.vx *= 0.95;
+        p.vy *= 0.95;
+        
+        // Wrap around edges
+        if (p.x < 0) p.x = canvas.width;
+        if (p.x > canvas.width) p.x = 0;
+        if (p.y < 0) p.y = canvas.height;
+        if (p.y > canvas.height) p.y = 0;
+        
+        // Draw particle
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(188, 255, 0, ${p.alpha})`;
+        ctx.fill();
+        
+        // Draw connections
+        particles.current.forEach((p2, j) => {
+          if (j <= i) return;
+          const d = Math.sqrt((p.x - p2.x) ** 2 + (p.y - p2.y) ** 2);
+          if (d < 80) {
+            ctx.beginPath();
+            ctx.moveTo(p.x, p.y);
+            ctx.lineTo(p2.x, p2.y);
+            ctx.strokeStyle = `rgba(188, 255, 0, ${(1 - d / 80) * 0.08})`;
+            ctx.stroke();
+          }
+        });
+      });
+      
+      animationRef.current = requestAnimationFrame(animate);
+    };
+    animate();
+
+    return () => {
+      window.removeEventListener('resize', resize);
+      window.removeEventListener('mousemove', handleMouse);
+      cancelAnimationFrame(animationRef.current);
+    };
+  }, []);
+
+  return <canvas ref={canvasRef} className="fixed inset-0 pointer-events-none z-0" />;
+};
+
 // Subtle ambient glow that follows cursor
 const AmbientGlow = () => {
   const [pos, setPos] = useState({ x: 50, y: 50 });
@@ -338,6 +436,7 @@ export default function Landing() {
 
   return (
     <div className="bg-black text-white min-h-screen">
+      <ParticleField />
       <AmbientGlow />
       
       {/* Navigation */}
