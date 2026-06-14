@@ -12,75 +12,99 @@ const CARD_IMAGES = [
 const SLAB_PRICES = ['$4,299', '$2,150', '$8,750'];
 const SLAB_GRADES = ['PSA 10', 'BGS 9.5', 'CGC 10'];
 
-// Particle field - enhanced cursor reactive with stronger effect
+// Particle field - enhanced cursor reactive with mobile support
 const ParticleField = () => {
   const canvasRef = useRef(null);
   const particles = useRef([]);
   const mouse = useRef({ x: -1000, y: -1000 });
   const animationRef = useRef(null);
+  const isMobile = useRef(false);
 
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
     
+    // Detect mobile
+    isMobile.current = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth < 768;
+    
     const resize = () => {
       canvas.width = window.innerWidth;
       canvas.height = window.innerHeight;
+      isMobile.current = window.innerWidth < 768;
     };
     resize();
     window.addEventListener('resize', resize);
 
-    // More particles for denser effect
+    // Fewer particles on mobile for performance
     particles.current = [];
-    const particleCount = Math.min(80, Math.floor((window.innerWidth * window.innerHeight) / 15000));
+    const particleCount = isMobile.current ? 25 : Math.min(70, Math.floor((window.innerWidth * window.innerHeight) / 18000));
+    
     for (let i = 0; i < particleCount; i++) {
       particles.current.push({
         x: Math.random() * canvas.width,
         y: Math.random() * canvas.height,
-        vx: (Math.random() - 0.5) * 0.5,
-        vy: (Math.random() - 0.5) * 0.5,
-        size: Math.random() * 2.5 + 1,
+        vx: (Math.random() - 0.5) * 0.3,
+        vy: (Math.random() - 0.5) * 0.3,
+        size: Math.random() * 2 + 1,
         alpha: Math.random() * 0.5 + 0.2,
         pulseOffset: Math.random() * Math.PI * 2,
       });
     }
 
+    // Mouse events
     const handleMouse = (e) => {
       mouse.current = { x: e.clientX, y: e.clientY };
     };
     const handleMouseLeave = () => {
       mouse.current = { x: -1000, y: -1000 };
     };
+    
+    // Touch events for mobile
+    const handleTouch = (e) => {
+      if (e.touches.length > 0) {
+        mouse.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+      }
+    };
+    const handleTouchEnd = () => {
+      mouse.current = { x: -1000, y: -1000 };
+    };
+    
     window.addEventListener('mousemove', handleMouse);
     window.addEventListener('mouseleave', handleMouseLeave);
+    window.addEventListener('touchmove', handleTouch, { passive: true });
+    window.addEventListener('touchstart', handleTouch, { passive: true });
+    window.addEventListener('touchend', handleTouchEnd);
 
     let time = 0;
     const animate = () => {
       time += 0.01;
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       
+      const connectionDistance = isMobile.current ? 80 : 120;
+      const mouseDistance = isMobile.current ? 150 : 200;
+      
       particles.current.forEach((p, i) => {
-        // Mouse attraction - stronger effect
+        // Mouse/touch attraction
         const dx = mouse.current.x - p.x;
         const dy = mouse.current.y - p.y;
         const dist = Math.sqrt(dx * dx + dy * dy);
         
-        if (dist < 200 && dist > 0) {
-          const force = (200 - dist) / 200;
-          p.vx += (dx / dist) * force * 0.4;
-          p.vy += (dy / dist) * force * 0.4;
+        if (dist < mouseDistance && dist > 0) {
+          const force = (mouseDistance - dist) / mouseDistance;
+          p.vx += (dx / dist) * force * 0.3;
+          p.vy += (dy / dist) * force * 0.3;
         }
         
         // Gentle floating motion
-        p.vx += Math.sin(time + p.pulseOffset) * 0.01;
-        p.vy += Math.cos(time + p.pulseOffset) * 0.01;
+        p.vx += Math.sin(time + p.pulseOffset) * 0.008;
+        p.vy += Math.cos(time + p.pulseOffset) * 0.008;
         
         // Apply velocity with damping
         p.x += p.vx;
         p.y += p.vy;
-        p.vx *= 0.96;
-        p.vy *= 0.96;
+        p.vx *= 0.97;
+        p.vy *= 0.97;
         
         // Wrap around edges
         if (p.x < 0) p.x = canvas.width;
@@ -89,32 +113,46 @@ const ParticleField = () => {
         if (p.y > canvas.height) p.y = 0;
         
         // Pulse size
-        const pulse = Math.sin(time * 2 + p.pulseOffset) * 0.3 + 1;
+        const pulse = Math.sin(time * 2 + p.pulseOffset) * 0.2 + 1;
         const currentSize = p.size * pulse;
         
-        // Draw particle with glow
-        const gradient = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, currentSize * 3);
-        gradient.addColorStop(0, `rgba(188, 255, 0, ${p.alpha})`);
-        gradient.addColorStop(0.5, `rgba(188, 255, 0, ${p.alpha * 0.3})`);
-        gradient.addColorStop(1, 'rgba(188, 255, 0, 0)');
+        // Draw particle - simpler on mobile for performance
+        if (isMobile.current) {
+          // Simple glow on mobile
+          ctx.beginPath();
+          ctx.arc(p.x, p.y, currentSize * 2, 0, Math.PI * 2);
+          ctx.fillStyle = `rgba(188, 255, 0, ${p.alpha * 0.3})`;
+          ctx.fill();
+          
+          ctx.beginPath();
+          ctx.arc(p.x, p.y, currentSize, 0, Math.PI * 2);
+          ctx.fillStyle = `rgba(188, 255, 0, ${p.alpha})`;
+          ctx.fill();
+        } else {
+          // Full glow effect on desktop
+          const gradient = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, currentSize * 3);
+          gradient.addColorStop(0, `rgba(188, 255, 0, ${p.alpha})`);
+          gradient.addColorStop(0.5, `rgba(188, 255, 0, ${p.alpha * 0.3})`);
+          gradient.addColorStop(1, 'rgba(188, 255, 0, 0)');
+          
+          ctx.beginPath();
+          ctx.arc(p.x, p.y, currentSize * 3, 0, Math.PI * 2);
+          ctx.fillStyle = gradient;
+          ctx.fill();
+          
+          ctx.beginPath();
+          ctx.arc(p.x, p.y, currentSize, 0, Math.PI * 2);
+          ctx.fillStyle = `rgba(188, 255, 0, ${p.alpha})`;
+          ctx.fill();
+        }
         
-        ctx.beginPath();
-        ctx.arc(p.x, p.y, currentSize * 3, 0, Math.PI * 2);
-        ctx.fillStyle = gradient;
-        ctx.fill();
-        
-        // Solid core
-        ctx.beginPath();
-        ctx.arc(p.x, p.y, currentSize, 0, Math.PI * 2);
-        ctx.fillStyle = `rgba(188, 255, 0, ${p.alpha})`;
-        ctx.fill();
-        
-        // Draw connections to nearby particles
-        particles.current.forEach((p2, j) => {
-          if (j <= i) return;
+        // Draw connections - fewer checks on mobile
+        const connectionStep = isMobile.current ? 2 : 1;
+        for (let j = i + 1; j < particles.current.length; j += connectionStep) {
+          const p2 = particles.current[j];
           const d = Math.sqrt((p.x - p2.x) ** 2 + (p.y - p2.y) ** 2);
-          if (d < 120) {
-            const lineAlpha = (1 - d / 120) * 0.15;
+          if (d < connectionDistance) {
+            const lineAlpha = (1 - d / connectionDistance) * 0.15;
             ctx.beginPath();
             ctx.moveTo(p.x, p.y);
             ctx.lineTo(p2.x, p2.y);
@@ -122,11 +160,11 @@ const ParticleField = () => {
             ctx.lineWidth = 1;
             ctx.stroke();
           }
-        });
+        }
         
-        // Extra bright connection to mouse
-        if (dist < 200 && dist > 0) {
-          const lineAlpha = (1 - dist / 200) * 0.2;
+        // Connection to mouse/touch point
+        if (dist < mouseDistance && dist > 0) {
+          const lineAlpha = (1 - dist / mouseDistance) * 0.2;
           ctx.beginPath();
           ctx.moveTo(p.x, p.y);
           ctx.lineTo(mouse.current.x, mouse.current.y);
@@ -144,6 +182,9 @@ const ParticleField = () => {
       window.removeEventListener('resize', resize);
       window.removeEventListener('mousemove', handleMouse);
       window.removeEventListener('mouseleave', handleMouseLeave);
+      window.removeEventListener('touchmove', handleTouch);
+      window.removeEventListener('touchstart', handleTouch);
+      window.removeEventListener('touchend', handleTouchEnd);
       cancelAnimationFrame(animationRef.current);
     };
   }, []);
