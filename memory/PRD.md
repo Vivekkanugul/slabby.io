@@ -83,15 +83,47 @@ All mutations are stored as immutable events:
   - Provably fair verification UI
 
 ### Session 7 (December 13, 2025)
-- [x] **Complete Landing Page Rebuild** - Removed all glitchy, overlapping physics animations
-  - Clean, Apple-level polished design
-  - Subtle ambient glow that follows cursor
-  - 3D card showcase with carousel navigation
-  - Smooth animated stat counters ($2.4M, 11K+, 99.9%, <2s)
-  - Clean feature cards with subtle 3D tilt on hover
-  - Properly spaced step numbers (01, 02, 03) with no overlapping
-  - Mobile responsive layout
-  - No redundant elements, no glitches, no overlapping
+- [x] **Complete Landing Page Rebuild** - Clean, Apple-level polished design
+  - Particle field with cursor interaction
+  - 3D floating card carousel
+  - Smooth animated stat counters
+  - Mobile-optimized with touch support
+- [x] **Backend Integrations for Go-Live**:
+  - **eBay Service** (`/api/ebay/*`) - Price comparison, listing lookup, market analysis
+  - **PSA/BGS/CGC Verification** (`/api/verification/*`) - Card grade verification
+  - **USPS Shipping** (`/api/shipping/*`) - Labels, tracking, rate calculation, address validation
+  - **Stripe Enhanced** (`/api/payments/*`) - Connect payouts, escrow, transfers
+
+## Backend API Endpoints (Go-Live Ready)
+
+### Card Verification (`/api/verification/`)
+- `POST /verify` - Verify PSA/BGS/CGC cert number
+- `GET /verify/{company}/{cert}` - Quick verification
+- `GET /card/{card_id}` - Get saved verification
+- `GET /status` - Service status
+
+### Shipping (`/api/shipping/`)
+- `GET /rates` - Get all shipping rates
+- `POST /label` - Create shipping label (PDF)
+- `GET /track/{tracking}` - Track shipment
+- `POST /validate-address` - Validate/standardize address
+- `GET /shipment/{id}` - Get shipment details
+
+### eBay (`/api/ebay/`)
+- `GET /search` - Search eBay listings
+- `GET /item/{id}` - Get item details
+- `GET /price-analysis` - Market price analysis
+
+### Payments (`/api/payments/`)
+- `POST /deposit` - Create deposit checkout
+- `POST /connect/create` - Create seller Connect account
+- `POST /connect/onboarding` - Get onboarding link
+- `POST /escrow/create` - Create escrow payment
+- `POST /escrow/{id}/release` - Release to seller
+- `POST /escrow/{id}/refund` - Refund to buyer
+- `POST /transfer` - Direct transfer to seller
+- `POST /payout` - Payout to bank
+- `GET /balance` - Get user balance
 
 ## Pending Tasks
 

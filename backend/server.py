@@ -115,6 +115,10 @@ from routes.payments import router as payments_router
 from routes.websocket import router as ws_router
 from routes.ebay import router as ebay_router
 from routes.uploads import router as uploads_router
+from routes.verification import router as verification_router
+from routes.shipping import router as shipping_router
+from routes.ebay_enhanced import router as ebay_enhanced_router
+from routes.stripe_enhanced import router as stripe_enhanced_router
 
 # Register all routes under /api prefix
 app.include_router(auth_router, prefix="/api")
@@ -126,6 +130,10 @@ app.include_router(admin_router, prefix="/api")
 app.include_router(payments_router, prefix="/api")
 app.include_router(ebay_router, prefix="/api")
 app.include_router(uploads_router, prefix="/api")
+app.include_router(verification_router, prefix="/api")
+app.include_router(shipping_router, prefix="/api")
+app.include_router(ebay_enhanced_router, prefix="/api")
+app.include_router(stripe_enhanced_router, prefix="/api")
 
 # WebSocket routes (no /api prefix)
 app.include_router(ws_router)
