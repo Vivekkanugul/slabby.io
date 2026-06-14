@@ -258,90 +258,91 @@ const TiltCard = ({ children, className = '' }) => {
   );
 };
 
-// Orbiting Slabs showcase
+// 3D Orbiting Slabs - continuous floating animation
 const SlabShowcase = () => {
-  const [activeIndex, setActiveIndex] = useState(0);
-  const [isHovered, setIsHovered] = useState(false);
+  const [rotation, setRotation] = useState(0);
+  const [hoveredIndex, setHoveredIndex] = useState(null);
+  const animationRef = useRef(null);
 
   useEffect(() => {
-    if (isHovered) return;
-    const interval = setInterval(() => {
-      setActiveIndex(prev => (prev + 1) % CARD_IMAGES.length);
-    }, 3000);
-    return () => clearInterval(interval);
-  }, [isHovered]);
+    let lastTime = 0;
+    const animate = (time) => {
+      if (lastTime) {
+        const delta = time - lastTime;
+        setRotation(prev => prev + delta * 0.015); // Smooth continuous rotation
+      }
+      lastTime = time;
+      animationRef.current = requestAnimationFrame(animate);
+    };
+    animationRef.current = requestAnimationFrame(animate);
+    return () => cancelAnimationFrame(animationRef.current);
+  }, []);
 
   return (
-    <div 
-      className="relative h-[400px] w-full flex items-center justify-center"
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
-    >
-      {/* Glow behind cards */}
-      <div className="absolute w-64 h-64 bg-[#BCFF00]/10 rounded-full blur-[100px]" />
+    <div className="relative h-[420px] w-full flex items-center justify-center" style={{ perspective: '1000px' }}>
+      {/* Central glow */}
+      <div className="absolute w-48 h-48 bg-[#BCFF00]/10 rounded-full blur-[80px]" />
       
-      <div className="relative flex items-center justify-center gap-4" style={{ perspective: '1000px' }}>
+      <div 
+        className="relative w-[400px] h-[300px]" 
+        style={{ transformStyle: 'preserve-3d' }}
+      >
         {CARD_IMAGES.map((img, i) => {
-          const isActive = i === activeIndex;
-          const offset = i - activeIndex;
+          const baseAngle = (i / CARD_IMAGES.length) * Math.PI * 2;
+          const angle = baseAngle + rotation * 0.001;
+          const radius = 150;
+          const x = Math.cos(angle) * radius;
+          const z = Math.sin(angle) * radius;
+          const scale = (z + radius) / (radius * 2) * 0.4 + 0.6;
+          const opacity = (z + radius) / (radius * 2) * 0.5 + 0.5;
+          const zIndex = Math.round((z + radius) * 10);
+          const isHovered = hoveredIndex === i;
           
           return (
             <motion.div
               key={i}
-              onClick={() => setActiveIndex(i)}
+              className="absolute left-1/2 top-1/2 cursor-pointer"
+              style={{
+                x,
+                zIndex: isHovered ? 100 : zIndex,
+                translateX: '-50%',
+                translateY: '-50%',
+              }}
               animate={{
-                x: offset * 120,
-                z: isActive ? 50 : -50,
-                rotateY: offset * -15,
-                scale: isActive ? 1.1 : 0.85,
-                opacity: Math.abs(offset) > 1 ? 0.3 : 1,
+                scale: isHovered ? 1.2 : scale,
+                opacity: isHovered ? 1 : opacity,
+                rotateY: -angle * 15,
               }}
               transition={{ type: 'spring', stiffness: 200, damping: 25 }}
-              className="absolute cursor-pointer"
-              style={{ transformStyle: 'preserve-3d' }}
+              onHoverStart={() => setHoveredIndex(i)}
+              onHoverEnd={() => setHoveredIndex(null)}
             >
-              <TiltCard>
-                <div className={`
-                  rounded-2xl overflow-hidden transition-shadow duration-300
-                  ${isActive ? 'shadow-2xl shadow-[#BCFF00]/20' : 'shadow-xl shadow-black/50'}
-                `}>
-                  <div className="w-28 md:w-36 bg-gradient-to-b from-white/10 to-white/5 p-1 rounded-2xl border border-white/10">
-                    <img 
-                      src={img} 
-                      alt={`Slab ${i + 1}`} 
-                      className="w-full aspect-[3/4] object-cover rounded-xl"
-                    />
-                  </div>
+              <div className={`
+                rounded-2xl overflow-hidden transition-shadow duration-300
+                ${isHovered ? 'shadow-2xl shadow-[#BCFF00]/30' : 'shadow-xl shadow-black/50'}
+              `}>
+                <div className="w-28 md:w-36 bg-gradient-to-b from-white/10 to-white/5 p-1 rounded-2xl border border-white/10">
+                  <img 
+                    src={img} 
+                    alt={`Slab ${i + 1}`} 
+                    className="w-full aspect-[3/4] object-cover rounded-xl"
+                  />
                 </div>
-                {isActive && (
-                  <motion.div 
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="absolute -bottom-12 left-1/2 -translate-x-1/2 text-center"
-                  >
-                    <div className="px-4 py-1.5 bg-black/80 backdrop-blur-sm rounded-full border border-[#BCFF00]/30">
-                      <span className="text-[#BCFF00] font-bold">{SLAB_PRICES[i]}</span>
-                    </div>
-                    <span className="text-xs text-zinc-500 mt-1 block">{SLAB_GRADES[i]}</span>
-                  </motion.div>
-                )}
-              </TiltCard>
+              </div>
+              
+              {/* Price tag - always visible on front cards */}
+              <motion.div 
+                className="absolute -bottom-10 left-1/2 -translate-x-1/2 text-center whitespace-nowrap"
+                animate={{ opacity: scale > 0.75 ? 1 : 0 }}
+              >
+                <div className="px-3 py-1.5 bg-black/80 backdrop-blur-sm rounded-full border border-[#BCFF00]/30">
+                  <span className="text-[#BCFF00] font-bold text-sm">{SLAB_PRICES[i]}</span>
+                </div>
+                <span className="text-[10px] text-zinc-500 mt-1 block">{SLAB_GRADES[i]}</span>
+              </motion.div>
             </motion.div>
           );
         })}
-      </div>
-      
-      {/* Navigation dots */}
-      <div className="absolute bottom-0 flex gap-2">
-        {CARD_IMAGES.map((_, i) => (
-          <button
-            key={i}
-            onClick={() => setActiveIndex(i)}
-            className={`w-2 h-2 rounded-full transition-all duration-300 ${
-              i === activeIndex ? 'bg-[#BCFF00] w-6' : 'bg-white/20 hover:bg-white/40'
-            }`}
-          />
-        ))}
       </div>
     </div>
   );
