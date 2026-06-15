@@ -271,6 +271,181 @@ const AnimatedCounter = ({ value, suffix = '', prefix = '' }) => {
   );
 };
 
+// Particle text for "Slabby" - particles form letters
+const ParticleText = ({ children, className }) => {
+  const canvasRef = useRef(null);
+  const containerRef = useRef(null);
+  const [isVisible, setIsVisible] = useState(false);
+  const particlesRef = useRef([]);
+  const animationRef = useRef(null);
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      ([entry]) => setIsVisible(entry.isIntersecting),
+      { threshold: 0.5 }
+    );
+    if (containerRef.current) observer.observe(containerRef.current);
+    return () => observer.disconnect();
+  }, []);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    canvas.width = 300;
+    canvas.height = 80;
+
+    // Draw text to get pixel data
+    ctx.fillStyle = '#BCFF00';
+    ctx.font = 'bold 50px system-ui, -apple-system, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(children, canvas.width / 2, canvas.height / 2);
+
+    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+    particlesRef.current = [];
+
+    // Sample pixels to create particles
+    for (let y = 0; y < canvas.height; y += 4) {
+      for (let x = 0; x < canvas.width; x += 4) {
+        if (imageData.data[(y * canvas.width + x) * 4 + 3] > 128) {
+          particlesRef.current.push({
+            targetX: x,
+            targetY: y,
+            x: Math.random() * canvas.width,
+            y: Math.random() * canvas.height,
+            size: Math.random() * 2 + 1,
+            speed: Math.random() * 0.03 + 0.02,
+          });
+        }
+      }
+    }
+
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    const animate = () => {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      
+      particlesRef.current.forEach((p) => {
+        if (isVisible) {
+          // Move toward target
+          p.x += (p.targetX - p.x) * p.speed;
+          p.y += (p.targetY - p.y) * p.speed;
+        } else {
+          // Scatter when not visible
+          p.x += (Math.random() - 0.5) * 2;
+          p.y += (Math.random() - 0.5) * 2;
+        }
+        
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+        ctx.fillStyle = '#BCFF00';
+        ctx.fill();
+      });
+
+      animationRef.current = requestAnimationFrame(animate);
+    };
+    animate();
+
+    return () => cancelAnimationFrame(animationRef.current);
+  }, [children, isVisible]);
+
+  return (
+    <div ref={containerRef} className={className}>
+      <canvas ref={canvasRef} className="w-[300px] h-[80px]" />
+    </div>
+  );
+};
+
+// Gravity text - letters repel from cursor
+const GravityText = ({ children, className }) => {
+  const containerRef = useRef(null);
+  const [letters, setLetters] = useState([]);
+  const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
+
+  useEffect(() => {
+    setLetters(
+      children.split('').map((char, i) => ({
+        char,
+        id: i,
+        x: 0,
+        y: 0,
+        vx: 0,
+        vy: 0,
+      }))
+    );
+  }, [children]);
+
+  useEffect(() => {
+    const handleMouse = (e) => {
+      if (containerRef.current) {
+        const rect = containerRef.current.getBoundingClientRect();
+        setMousePos({ x: e.clientX - rect.left, y: e.clientY - rect.top });
+      }
+    };
+    window.addEventListener('mousemove', handleMouse);
+    return () => window.removeEventListener('mousemove', handleMouse);
+  }, []);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setLetters((prev) =>
+        prev.map((letter, i) => {
+          const charWidth = 35;
+          const baseX = i * charWidth;
+          const dx = mousePos.x - (baseX + letter.x);
+          const dy = mousePos.y - 30 - letter.y;
+          const dist = Math.sqrt(dx * dx + dy * dy);
+
+          let ax = 0, ay = 0;
+          if (dist < 120 && dist > 0) {
+            const force = (120 - dist) / 120;
+            ax = -(dx / dist) * force * 0.8;
+            ay = -(dy / dist) * force * 0.8;
+          }
+
+          // Spring back to origin
+          ax += -letter.x * 0.08;
+          ay += -letter.y * 0.08;
+
+          const nvx = (letter.vx + ax) * 0.92;
+          const nvy = (letter.vy + ay) * 0.92;
+
+          return {
+            ...letter,
+            x: letter.x + nvx,
+            y: letter.y + nvy,
+            vx: nvx,
+            vy: nvy,
+          };
+        })
+      );
+    }, 30);
+    return () => clearInterval(interval);
+  }, [mousePos]);
+
+  return (
+    <div ref={containerRef} className={`inline-flex ${className}`}>
+      {letters.map((letter) => (
+        <motion.span
+          key={letter.id}
+          animate={{ x: letter.x, y: letter.y }}
+          transition={{ type: 'spring', stiffness: 500, damping: 30 }}
+          className="inline-block"
+          style={{
+            textShadow:
+              Math.abs(letter.x) > 3 || Math.abs(letter.y) > 3
+                ? '0 0 30px rgba(188,255,0,0.8)'
+                : '0 0 15px rgba(188,255,0,0.3)',
+          }}
+        >
+          {letter.char === ' ' ? '\u00A0' : letter.char}
+        </motion.span>
+      ))}
+    </div>
+  );
+};
+
 // Premium button with subtle animation
 const PremiumButton = ({ children, href, variant = 'primary', className = '' }) => {
   const isPrimary = variant === 'primary';
@@ -633,9 +808,10 @@ export default function Landing() {
               viewport={{ once: true }}
               className="text-center mb-16"
             >
-              <h2 className="text-3xl sm:text-4xl font-bold mb-4">
-                Why <span className="text-[#BCFF00]">Slabby</span>
-              </h2>
+              <div className="flex items-center justify-center gap-4 flex-wrap mb-4">
+                <span className="text-3xl sm:text-4xl font-bold text-white">Why</span>
+                <ParticleText className="inline-block">Slabby</ParticleText>
+              </div>
               <p className="text-zinc-400 max-w-lg mx-auto">
                 Built for collectors, by collectors. Every feature designed with your slabs in mind.
               </p>
@@ -729,7 +905,7 @@ export default function Landing() {
             </div>
             
             <h2 className="text-4xl sm:text-5xl font-bold mb-6">
-              Ready to <span className="text-[#BCFF00]">collect</span>?
+              <GravityText className="text-[#BCFF00]">Ready to collect?</GravityText>
             </h2>
             <p className="text-lg text-zinc-400 mb-10">
               Join thousands of collectors on the premium slab marketplace.
