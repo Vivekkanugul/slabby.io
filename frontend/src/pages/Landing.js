@@ -357,11 +357,12 @@ const ParticleText = ({ children, className }) => {
   );
 };
 
-// Gravity text - letters repel from cursor
+// Gravity text - letters repel from cursor with stronger effect
 const GravityText = ({ children, className }) => {
   const containerRef = useRef(null);
   const [letters, setLetters] = useState([]);
-  const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
+  const [mousePos, setMousePos] = useState({ x: -1000, y: -1000 });
+  const animationRef = useRef(null);
 
   useEffect(() => {
     setLetters(
@@ -383,33 +384,45 @@ const GravityText = ({ children, className }) => {
         setMousePos({ x: e.clientX - rect.left, y: e.clientY - rect.top });
       }
     };
+    const handleTouch = (e) => {
+      if (containerRef.current && e.touches.length > 0) {
+        const rect = containerRef.current.getBoundingClientRect();
+        setMousePos({ x: e.touches[0].clientX - rect.left, y: e.touches[0].clientY - rect.top });
+      }
+    };
     window.addEventListener('mousemove', handleMouse);
-    return () => window.removeEventListener('mousemove', handleMouse);
+    window.addEventListener('touchmove', handleTouch);
+    return () => {
+      window.removeEventListener('mousemove', handleMouse);
+      window.removeEventListener('touchmove', handleTouch);
+    };
   }, []);
 
   useEffect(() => {
-    const interval = setInterval(() => {
+    const animate = () => {
       setLetters((prev) =>
         prev.map((letter, i) => {
-          const charWidth = 35;
+          const charWidth = 40;
           const baseX = i * charWidth;
-          const dx = mousePos.x - (baseX + letter.x);
-          const dy = mousePos.y - 30 - letter.y;
+          const centerY = 40;
+          const dx = mousePos.x - (baseX + letter.x + 20);
+          const dy = mousePos.y - (centerY + letter.y);
           const dist = Math.sqrt(dx * dx + dy * dy);
 
           let ax = 0, ay = 0;
-          if (dist < 120 && dist > 0) {
-            const force = (120 - dist) / 120;
-            ax = -(dx / dist) * force * 0.8;
-            ay = -(dy / dist) * force * 0.8;
+          // Stronger repulsion
+          if (dist < 150 && dist > 0) {
+            const force = (150 - dist) / 150;
+            ax = -(dx / dist) * force * 2.5;
+            ay = -(dy / dist) * force * 2.5;
           }
 
           // Spring back to origin
-          ax += -letter.x * 0.08;
-          ay += -letter.y * 0.08;
+          ax += -letter.x * 0.06;
+          ay += -letter.y * 0.06;
 
-          const nvx = (letter.vx + ax) * 0.92;
-          const nvy = (letter.vy + ay) * 0.92;
+          const nvx = (letter.vx + ax) * 0.88;
+          const nvy = (letter.vy + ay) * 0.88;
 
           return {
             ...letter,
@@ -420,27 +433,29 @@ const GravityText = ({ children, className }) => {
           };
         })
       );
-    }, 30);
-    return () => clearInterval(interval);
+      animationRef.current = requestAnimationFrame(animate);
+    };
+    animationRef.current = requestAnimationFrame(animate);
+    return () => cancelAnimationFrame(animationRef.current);
   }, [mousePos]);
 
   return (
-    <div ref={containerRef} className={`inline-flex ${className}`}>
+    <div ref={containerRef} className={`inline-flex justify-center ${className}`} style={{ minHeight: '80px' }}>
       {letters.map((letter) => (
-        <motion.span
+        <span
           key={letter.id}
-          animate={{ x: letter.x, y: letter.y }}
-          transition={{ type: 'spring', stiffness: 500, damping: 30 }}
-          className="inline-block"
+          className="inline-block text-4xl sm:text-5xl font-bold"
           style={{
+            transform: `translate(${letter.x}px, ${letter.y}px)`,
+            transition: 'transform 0.05s linear',
             textShadow:
-              Math.abs(letter.x) > 3 || Math.abs(letter.y) > 3
-                ? '0 0 30px rgba(188,255,0,0.8)'
-                : '0 0 15px rgba(188,255,0,0.3)',
+              Math.abs(letter.x) > 5 || Math.abs(letter.y) > 5
+                ? '0 0 40px rgba(188,255,0,0.9), 0 0 80px rgba(188,255,0,0.5)'
+                : '0 0 20px rgba(188,255,0,0.4)',
           }}
         >
           {letter.char === ' ' ? '\u00A0' : letter.char}
-        </motion.span>
+        </span>
       ))}
     </div>
   );
@@ -515,10 +530,11 @@ const TiltCard = ({ children, className = '' }) => {
   );
 };
 
-// 3D Orbiting Slabs - continuous floating animation
+// 3D Orbiting Slabs - continuous floating animation with dramatic effect
 const SlabShowcase = () => {
   const [rotation, setRotation] = useState(0);
   const [hoveredIndex, setHoveredIndex] = useState(null);
+  const [floatOffset, setFloatOffset] = useState(0);
   const animationRef = useRef(null);
 
   useEffect(() => {
@@ -526,7 +542,8 @@ const SlabShowcase = () => {
     const animate = (time) => {
       if (lastTime) {
         const delta = time - lastTime;
-        setRotation(prev => prev + delta * 0.015); // Smooth continuous rotation
+        setRotation(prev => prev + delta * 0.012);
+        setFloatOffset(Math.sin(time * 0.002) * 15);
       }
       lastTime = time;
       animationRef.current = requestAnimationFrame(animate);
@@ -536,24 +553,34 @@ const SlabShowcase = () => {
   }, []);
 
   return (
-    <div className="relative h-[420px] w-full flex items-center justify-center" style={{ perspective: '1000px' }}>
+    <div className="relative h-[450px] w-full flex items-center justify-center" style={{ perspective: '1200px' }}>
       {/* Central glow */}
-      <div className="absolute w-48 h-48 bg-[#BCFF00]/10 rounded-full blur-[80px]" />
+      <div className="absolute w-64 h-64 bg-[#BCFF00]/15 rounded-full blur-[100px] animate-pulse" />
+      
+      {/* Orbit ring visual */}
+      <div 
+        className="absolute w-[350px] h-[350px] border border-[#BCFF00]/10 rounded-full"
+        style={{ transform: 'rotateX(70deg)' }}
+      />
       
       <div 
-        className="relative w-[400px] h-[300px]" 
+        className="relative w-[450px] h-[350px]" 
         style={{ transformStyle: 'preserve-3d' }}
       >
         {CARD_IMAGES.map((img, i) => {
           const baseAngle = (i / CARD_IMAGES.length) * Math.PI * 2;
           const angle = baseAngle + rotation * 0.001;
-          const radius = 150;
+          const radius = 170;
           const x = Math.cos(angle) * radius;
           const z = Math.sin(angle) * radius;
-          const scale = (z + radius) / (radius * 2) * 0.4 + 0.6;
-          const opacity = (z + radius) / (radius * 2) * 0.5 + 0.5;
+          const scale = (z + radius) / (radius * 2) * 0.5 + 0.5;
+          const opacity = (z + radius) / (radius * 2) * 0.6 + 0.4;
           const zIndex = Math.round((z + radius) * 10);
           const isHovered = hoveredIndex === i;
+          const isFront = z > 0;
+          
+          // Individual float offset per card
+          const cardFloat = Math.sin(rotation * 0.001 + i * 2) * 12 + floatOffset * (i === 1 ? 1.2 : 0.8);
           
           return (
             <motion.div
@@ -561,24 +588,29 @@ const SlabShowcase = () => {
               className="absolute left-1/2 top-1/2 cursor-pointer"
               style={{
                 x,
+                y: cardFloat,
                 zIndex: isHovered ? 100 : zIndex,
                 translateX: '-50%',
                 translateY: '-50%',
               }}
               animate={{
-                scale: isHovered ? 1.2 : scale,
+                scale: isHovered ? 1.25 : scale,
                 opacity: isHovered ? 1 : opacity,
-                rotateY: -angle * 15,
+                rotateY: isHovered ? 0 : -angle * 12,
               }}
               transition={{ type: 'spring', stiffness: 200, damping: 25 }}
               onHoverStart={() => setHoveredIndex(i)}
               onHoverEnd={() => setHoveredIndex(null)}
             >
               <div className={`
-                rounded-2xl overflow-hidden transition-shadow duration-300
-                ${isHovered ? 'shadow-2xl shadow-[#BCFF00]/30' : 'shadow-xl shadow-black/50'}
+                rounded-2xl overflow-hidden transition-all duration-300
+                ${isHovered ? 'shadow-2xl shadow-[#BCFF00]/40' : isFront ? 'shadow-xl shadow-[#BCFF00]/20' : 'shadow-lg shadow-black/50'}
               `}>
-                <div className="w-28 md:w-36 bg-gradient-to-b from-white/10 to-white/5 p-1 rounded-2xl border border-white/10">
+                <div className={`
+                  w-32 md:w-40 bg-gradient-to-b from-white/10 to-white/5 p-1.5 rounded-2xl 
+                  border transition-colors duration-300
+                  ${isHovered ? 'border-[#BCFF00]/50' : 'border-white/10'}
+                `}>
                   <img 
                     src={img} 
                     alt={`Slab ${i + 1}`} 
@@ -587,15 +619,23 @@ const SlabShowcase = () => {
                 </div>
               </div>
               
-              {/* Price tag - always visible on front cards */}
+              {/* Price tag - visible on front cards */}
               <motion.div 
-                className="absolute -bottom-10 left-1/2 -translate-x-1/2 text-center whitespace-nowrap"
-                animate={{ opacity: scale > 0.75 ? 1 : 0 }}
+                className="absolute -bottom-14 left-1/2 -translate-x-1/2 text-center whitespace-nowrap"
+                animate={{ 
+                  opacity: isHovered || scale > 0.7 ? 1 : 0,
+                  y: isHovered ? -5 : 0
+                }}
               >
-                <div className="px-3 py-1.5 bg-black/80 backdrop-blur-sm rounded-full border border-[#BCFF00]/30">
-                  <span className="text-[#BCFF00] font-bold text-sm">{SLAB_PRICES[i]}</span>
+                <div className={`
+                  px-4 py-2 backdrop-blur-sm rounded-full border transition-all duration-300
+                  ${isHovered ? 'bg-[#BCFF00] border-[#BCFF00]' : 'bg-black/80 border-[#BCFF00]/30'}
+                `}>
+                  <span className={`font-bold ${isHovered ? 'text-black' : 'text-[#BCFF00]'}`}>
+                    {SLAB_PRICES[i]}
+                  </span>
                 </div>
-                <span className="text-[10px] text-zinc-500 mt-1 block">{SLAB_GRADES[i]}</span>
+                <span className="text-xs text-zinc-500 mt-1.5 block">{SLAB_GRADES[i]}</span>
               </motion.div>
             </motion.div>
           );
