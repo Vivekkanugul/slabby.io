@@ -271,13 +271,21 @@ const AnimatedCounter = ({ value, suffix = '', prefix = '' }) => {
   );
 };
 
-// Particle text for "Slabby" - particles form letters
+// Particle text for "Slabby" - particles form letters (mobile optimized)
 const ParticleText = ({ children, className }) => {
   const canvasRef = useRef(null);
   const containerRef = useRef(null);
   const [isVisible, setIsVisible] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
   const particlesRef = useRef([]);
   const animationRef = useRef(null);
+
+  useEffect(() => {
+    const checkMobile = () => setIsMobile(window.innerWidth < 768);
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
 
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -292,47 +300,51 @@ const ParticleText = ({ children, className }) => {
     const canvas = canvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
-    canvas.width = 300;
-    canvas.height = 80;
+    
+    const width = isMobile ? 200 : 300;
+    const height = isMobile ? 55 : 80;
+    const fontSize = isMobile ? 35 : 50;
+    const sampleStep = isMobile ? 5 : 4;
+    
+    canvas.width = width;
+    canvas.height = height;
 
     // Draw text to get pixel data
     ctx.fillStyle = '#BCFF00';
-    ctx.font = 'bold 50px system-ui, -apple-system, sans-serif';
+    ctx.font = `bold ${fontSize}px system-ui, -apple-system, sans-serif`;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.fillText(children, canvas.width / 2, canvas.height / 2);
+    ctx.fillText(children, width / 2, height / 2);
 
-    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+    const imageData = ctx.getImageData(0, 0, width, height);
     particlesRef.current = [];
 
-    // Sample pixels to create particles
-    for (let y = 0; y < canvas.height; y += 4) {
-      for (let x = 0; x < canvas.width; x += 4) {
-        if (imageData.data[(y * canvas.width + x) * 4 + 3] > 128) {
+    // Sample pixels to create particles (fewer on mobile)
+    for (let y = 0; y < height; y += sampleStep) {
+      for (let x = 0; x < width; x += sampleStep) {
+        if (imageData.data[(y * width + x) * 4 + 3] > 128) {
           particlesRef.current.push({
             targetX: x,
             targetY: y,
-            x: Math.random() * canvas.width,
-            y: Math.random() * canvas.height,
-            size: Math.random() * 2 + 1,
+            x: Math.random() * width,
+            y: Math.random() * height,
+            size: Math.random() * (isMobile ? 1.5 : 2) + 1,
             speed: Math.random() * 0.03 + 0.02,
           });
         }
       }
     }
 
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.clearRect(0, 0, width, height);
 
     const animate = () => {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.clearRect(0, 0, width, height);
       
       particlesRef.current.forEach((p) => {
         if (isVisible) {
-          // Move toward target
           p.x += (p.targetX - p.x) * p.speed;
           p.y += (p.targetY - p.y) * p.speed;
         } else {
-          // Scatter when not visible
           p.x += (Math.random() - 0.5) * 2;
           p.y += (Math.random() - 0.5) * 2;
         }
@@ -348,21 +360,29 @@ const ParticleText = ({ children, className }) => {
     animate();
 
     return () => cancelAnimationFrame(animationRef.current);
-  }, [children, isVisible]);
+  }, [children, isVisible, isMobile]);
 
   return (
     <div ref={containerRef} className={className}>
-      <canvas ref={canvasRef} className="w-[300px] h-[80px]" />
+      <canvas ref={canvasRef} className="w-[200px] md:w-[300px] h-[55px] md:h-[80px]" />
     </div>
   );
 };
 
-// Gravity text - letters repel from cursor with stronger effect
+// Gravity text - letters repel from cursor with mobile support
 const GravityText = ({ children, className }) => {
   const containerRef = useRef(null);
   const [letters, setLetters] = useState([]);
   const [mousePos, setMousePos] = useState({ x: -1000, y: -1000 });
+  const [isMobile, setIsMobile] = useState(false);
   const animationRef = useRef(null);
+
+  useEffect(() => {
+    const checkMobile = () => setIsMobile(window.innerWidth < 768);
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
 
   useEffect(() => {
     setLetters(
@@ -390,34 +410,43 @@ const GravityText = ({ children, className }) => {
         setMousePos({ x: e.touches[0].clientX - rect.left, y: e.touches[0].clientY - rect.top });
       }
     };
+    const handleTouchEnd = () => {
+      setMousePos({ x: -1000, y: -1000 });
+    };
+    
     window.addEventListener('mousemove', handleMouse);
-    window.addEventListener('touchmove', handleTouch);
+    window.addEventListener('touchmove', handleTouch, { passive: true });
+    window.addEventListener('touchstart', handleTouch, { passive: true });
+    window.addEventListener('touchend', handleTouchEnd);
     return () => {
       window.removeEventListener('mousemove', handleMouse);
       window.removeEventListener('touchmove', handleTouch);
+      window.removeEventListener('touchstart', handleTouch);
+      window.removeEventListener('touchend', handleTouchEnd);
     };
   }, []);
 
   useEffect(() => {
+    const charWidth = isMobile ? 22 : 40;
+    const repelDistance = isMobile ? 100 : 150;
+    const repelForce = isMobile ? 1.5 : 2.5;
+    
     const animate = () => {
       setLetters((prev) =>
         prev.map((letter, i) => {
-          const charWidth = 40;
           const baseX = i * charWidth;
-          const centerY = 40;
-          const dx = mousePos.x - (baseX + letter.x + 20);
+          const centerY = isMobile ? 25 : 40;
+          const dx = mousePos.x - (baseX + letter.x + charWidth/2);
           const dy = mousePos.y - (centerY + letter.y);
           const dist = Math.sqrt(dx * dx + dy * dy);
 
           let ax = 0, ay = 0;
-          // Stronger repulsion
-          if (dist < 150 && dist > 0) {
-            const force = (150 - dist) / 150;
-            ax = -(dx / dist) * force * 2.5;
-            ay = -(dy / dist) * force * 2.5;
+          if (dist < repelDistance && dist > 0) {
+            const force = (repelDistance - dist) / repelDistance;
+            ax = -(dx / dist) * force * repelForce;
+            ay = -(dy / dist) * force * repelForce;
           }
 
-          // Spring back to origin
           ax += -letter.x * 0.06;
           ay += -letter.y * 0.06;
 
@@ -437,14 +466,14 @@ const GravityText = ({ children, className }) => {
     };
     animationRef.current = requestAnimationFrame(animate);
     return () => cancelAnimationFrame(animationRef.current);
-  }, [mousePos]);
+  }, [mousePos, isMobile]);
 
   return (
-    <div ref={containerRef} className={`inline-flex justify-center ${className}`} style={{ minHeight: '80px' }}>
+    <div ref={containerRef} className={`inline-flex justify-center flex-wrap ${className}`} style={{ minHeight: isMobile ? '50px' : '80px' }}>
       {letters.map((letter) => (
         <span
           key={letter.id}
-          className="inline-block text-4xl sm:text-5xl font-bold"
+          className="inline-block text-2xl sm:text-4xl md:text-5xl font-bold"
           style={{
             transform: `translate(${letter.x}px, ${letter.y}px)`,
             transition: 'transform 0.05s linear',
@@ -530,53 +559,60 @@ const TiltCard = ({ children, className = '' }) => {
   );
 };
 
-// 3D Orbiting Slabs - continuous visible orbit animation
+// 3D Orbiting Slabs - continuous visible orbit animation with mobile support
 const SlabShowcase = () => {
   const [angle, setAngle] = useState(0);
   const [hoveredIndex, setHoveredIndex] = useState(null);
+  const [isMobile, setIsMobile] = useState(false);
   const animationRef = useRef(null);
 
   useEffect(() => {
+    const checkMobile = () => setIsMobile(window.innerWidth < 768);
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
+
+  useEffect(() => {
     const animate = () => {
-      setAngle(prev => prev + 0.008); // Visible rotation speed
+      setAngle(prev => prev + (isMobile ? 0.006 : 0.008));
       animationRef.current = requestAnimationFrame(animate);
     };
     animationRef.current = requestAnimationFrame(animate);
     return () => cancelAnimationFrame(animationRef.current);
-  }, []);
+  }, [isMobile]);
 
-  const radius = 180;
-  const floatY = Math.sin(angle * 2) * 12;
+  const radius = isMobile ? 100 : 180;
+  const floatY = Math.sin(angle * 2) * (isMobile ? 8 : 12);
 
   return (
-    <div className="relative h-[480px] w-full flex items-center justify-center" style={{ perspective: '1200px' }}>
+    <div className="relative h-[380px] md:h-[480px] w-full flex items-center justify-center overflow-hidden" style={{ perspective: '1200px' }}>
       {/* Central glow */}
-      <div className="absolute w-72 h-72 bg-[#BCFF00]/10 rounded-full blur-[120px]" />
+      <div className="absolute w-48 md:w-72 h-48 md:h-72 bg-[#BCFF00]/10 rounded-full blur-[80px] md:blur-[120px]" />
       
-      {/* Orbit path indicator */}
+      {/* Orbit path indicator - hide on mobile */}
       <div 
-        className="absolute w-[380px] h-[100px] border border-[#BCFF00]/10 rounded-full"
+        className="absolute w-[220px] md:w-[380px] h-[60px] md:h-[100px] border border-[#BCFF00]/10 rounded-full hidden md:block"
         style={{ transform: 'rotateX(75deg)' }}
       />
       
       <div 
-        className="relative w-[500px] h-[400px]" 
+        className="relative w-full max-w-[320px] md:max-w-[500px] h-[320px] md:h-[400px]" 
         style={{ transformStyle: 'preserve-3d' }}
       >
         {CARD_IMAGES.map((img, i) => {
-          const cardAngle = angle + (i * (Math.PI * 2 / 3)); // 120 degrees apart
+          const cardAngle = angle + (i * (Math.PI * 2 / 3));
           const x = Math.cos(cardAngle) * radius;
           const z = Math.sin(cardAngle) * radius;
           
-          // Scale and opacity based on z position (depth)
           const depthScale = (z + radius) / (radius * 2);
-          const scale = 0.6 + depthScale * 0.5;
+          const scale = isMobile ? (0.5 + depthScale * 0.4) : (0.6 + depthScale * 0.5);
           const opacity = 0.4 + depthScale * 0.6;
-          const blur = z < 0 ? 1 : 0;
+          const blur = z < 0 ? (isMobile ? 0.5 : 1) : 0;
           const zIndex = Math.round(z + radius);
           
           const isHovered = hoveredIndex === i;
-          const cardFloatY = floatY + Math.sin(angle * 1.5 + i) * 8;
+          const cardFloatY = floatY + Math.sin(angle * 1.5 + i) * (isMobile ? 5 : 8);
           
           return (
             <motion.div
@@ -588,8 +624,8 @@ const SlabShowcase = () => {
               }}
               animate={{
                 x: x,
-                y: cardFloatY - 50,
-                scale: isHovered ? 1.3 : scale,
+                y: cardFloatY - (isMobile ? 30 : 50),
+                scale: isHovered ? (isMobile ? 1.15 : 1.3) : scale,
                 opacity: isHovered ? 1 : opacity,
                 rotateY: isHovered ? 0 : -cardAngle * 8,
               }}
@@ -600,13 +636,15 @@ const SlabShowcase = () => {
               }}
               onHoverStart={() => setHoveredIndex(i)}
               onHoverEnd={() => setHoveredIndex(null)}
+              onTouchStart={() => setHoveredIndex(i)}
+              onTouchEnd={() => setTimeout(() => setHoveredIndex(null), 1500)}
             >
               <div 
                 className="relative -translate-x-1/2 -translate-y-1/2"
                 style={{ transformStyle: 'preserve-3d' }}
               >
                 <div className={`
-                  rounded-2xl overflow-hidden transition-all duration-300
+                  rounded-xl md:rounded-2xl overflow-hidden transition-all duration-300
                   ${isHovered 
                     ? 'shadow-2xl shadow-[#BCFF00]/50' 
                     : z > 0 
@@ -615,35 +653,35 @@ const SlabShowcase = () => {
                   }
                 `}>
                   <div className={`
-                    w-36 md:w-44 bg-gradient-to-b from-white/10 to-white/5 p-1.5 rounded-2xl 
+                    w-24 md:w-44 bg-gradient-to-b from-white/10 to-white/5 p-1 md:p-1.5 rounded-xl md:rounded-2xl 
                     border transition-all duration-300
                     ${isHovered ? 'border-[#BCFF00]' : 'border-white/10'}
                   `}>
                     <img 
                       src={img} 
                       alt={`Slab ${i + 1}`} 
-                      className="w-full aspect-[3/4] object-cover rounded-xl"
+                      className="w-full aspect-[3/4] object-cover rounded-lg md:rounded-xl"
                     />
                   </div>
                 </div>
                 
                 {/* Price tag */}
                 <motion.div 
-                  className="absolute -bottom-16 left-1/2 -translate-x-1/2 text-center whitespace-nowrap"
+                  className="absolute -bottom-12 md:-bottom-16 left-1/2 -translate-x-1/2 text-center whitespace-nowrap"
                   animate={{ 
                     opacity: isHovered || depthScale > 0.5 ? 1 : 0,
                     scale: isHovered ? 1.1 : 1
                   }}
                 >
                   <div className={`
-                    px-4 py-2 backdrop-blur-sm rounded-full border transition-all duration-300
+                    px-3 md:px-4 py-1.5 md:py-2 backdrop-blur-sm rounded-full border transition-all duration-300
                     ${isHovered ? 'bg-[#BCFF00] border-[#BCFF00]' : 'bg-black/80 border-[#BCFF00]/40'}
                   `}>
-                    <span className={`font-bold text-sm ${isHovered ? 'text-black' : 'text-[#BCFF00]'}`}>
+                    <span className={`font-bold text-xs md:text-sm ${isHovered ? 'text-black' : 'text-[#BCFF00]'}`}>
                       {SLAB_PRICES[i]}
                     </span>
                   </div>
-                  <span className="text-xs text-zinc-500 mt-1.5 block">{SLAB_GRADES[i]}</span>
+                  <span className="text-[10px] md:text-xs text-zinc-500 mt-1 block">{SLAB_GRADES[i]}</span>
                 </motion.div>
               </div>
             </motion.div>
