@@ -530,113 +530,122 @@ const TiltCard = ({ children, className = '' }) => {
   );
 };
 
-// 3D Orbiting Slabs - continuous floating animation with dramatic effect
+// 3D Orbiting Slabs - continuous visible orbit animation
 const SlabShowcase = () => {
-  const [rotation, setRotation] = useState(0);
+  const [angle, setAngle] = useState(0);
   const [hoveredIndex, setHoveredIndex] = useState(null);
-  const [floatOffset, setFloatOffset] = useState(0);
   const animationRef = useRef(null);
 
   useEffect(() => {
-    let lastTime = 0;
-    const animate = (time) => {
-      if (lastTime) {
-        const delta = time - lastTime;
-        setRotation(prev => prev + delta * 0.012);
-        setFloatOffset(Math.sin(time * 0.002) * 15);
-      }
-      lastTime = time;
+    const animate = () => {
+      setAngle(prev => prev + 0.008); // Visible rotation speed
       animationRef.current = requestAnimationFrame(animate);
     };
     animationRef.current = requestAnimationFrame(animate);
     return () => cancelAnimationFrame(animationRef.current);
   }, []);
 
+  const radius = 180;
+  const floatY = Math.sin(angle * 2) * 12;
+
   return (
-    <div className="relative h-[450px] w-full flex items-center justify-center" style={{ perspective: '1200px' }}>
+    <div className="relative h-[480px] w-full flex items-center justify-center" style={{ perspective: '1200px' }}>
       {/* Central glow */}
-      <div className="absolute w-64 h-64 bg-[#BCFF00]/15 rounded-full blur-[100px] animate-pulse" />
+      <div className="absolute w-72 h-72 bg-[#BCFF00]/10 rounded-full blur-[120px]" />
       
-      {/* Orbit ring visual */}
+      {/* Orbit path indicator */}
       <div 
-        className="absolute w-[350px] h-[350px] border border-[#BCFF00]/10 rounded-full"
-        style={{ transform: 'rotateX(70deg)' }}
+        className="absolute w-[380px] h-[100px] border border-[#BCFF00]/10 rounded-full"
+        style={{ transform: 'rotateX(75deg)' }}
       />
       
       <div 
-        className="relative w-[450px] h-[350px]" 
+        className="relative w-[500px] h-[400px]" 
         style={{ transformStyle: 'preserve-3d' }}
       >
         {CARD_IMAGES.map((img, i) => {
-          const baseAngle = (i / CARD_IMAGES.length) * Math.PI * 2;
-          const angle = baseAngle + rotation * 0.001;
-          const radius = 170;
-          const x = Math.cos(angle) * radius;
-          const z = Math.sin(angle) * radius;
-          const scale = (z + radius) / (radius * 2) * 0.5 + 0.5;
-          const opacity = (z + radius) / (radius * 2) * 0.6 + 0.4;
-          const zIndex = Math.round((z + radius) * 10);
-          const isHovered = hoveredIndex === i;
-          const isFront = z > 0;
+          const cardAngle = angle + (i * (Math.PI * 2 / 3)); // 120 degrees apart
+          const x = Math.cos(cardAngle) * radius;
+          const z = Math.sin(cardAngle) * radius;
           
-          // Individual float offset per card
-          const cardFloat = Math.sin(rotation * 0.001 + i * 2) * 12 + floatOffset * (i === 1 ? 1.2 : 0.8);
+          // Scale and opacity based on z position (depth)
+          const depthScale = (z + radius) / (radius * 2);
+          const scale = 0.6 + depthScale * 0.5;
+          const opacity = 0.4 + depthScale * 0.6;
+          const blur = z < 0 ? 1 : 0;
+          const zIndex = Math.round(z + radius);
+          
+          const isHovered = hoveredIndex === i;
+          const cardFloatY = floatY + Math.sin(angle * 1.5 + i) * 8;
           
           return (
             <motion.div
               key={i}
               className="absolute left-1/2 top-1/2 cursor-pointer"
               style={{
-                x,
-                y: cardFloat,
-                zIndex: isHovered ? 100 : zIndex,
-                translateX: '-50%',
-                translateY: '-50%',
+                zIndex: isHovered ? 200 : zIndex,
+                filter: isHovered ? 'none' : `blur(${blur}px)`,
               }}
               animate={{
-                scale: isHovered ? 1.25 : scale,
+                x: x,
+                y: cardFloatY - 50,
+                scale: isHovered ? 1.3 : scale,
                 opacity: isHovered ? 1 : opacity,
-                rotateY: isHovered ? 0 : -angle * 12,
+                rotateY: isHovered ? 0 : -cardAngle * 8,
               }}
-              transition={{ type: 'spring', stiffness: 200, damping: 25 }}
+              transition={{ 
+                type: 'tween', 
+                duration: 0.1,
+                ease: 'linear'
+              }}
               onHoverStart={() => setHoveredIndex(i)}
               onHoverEnd={() => setHoveredIndex(null)}
             >
-              <div className={`
-                rounded-2xl overflow-hidden transition-all duration-300
-                ${isHovered ? 'shadow-2xl shadow-[#BCFF00]/40' : isFront ? 'shadow-xl shadow-[#BCFF00]/20' : 'shadow-lg shadow-black/50'}
-              `}>
-                <div className={`
-                  w-32 md:w-40 bg-gradient-to-b from-white/10 to-white/5 p-1.5 rounded-2xl 
-                  border transition-colors duration-300
-                  ${isHovered ? 'border-[#BCFF00]/50' : 'border-white/10'}
-                `}>
-                  <img 
-                    src={img} 
-                    alt={`Slab ${i + 1}`} 
-                    className="w-full aspect-[3/4] object-cover rounded-xl"
-                  />
-                </div>
-              </div>
-              
-              {/* Price tag - visible on front cards */}
-              <motion.div 
-                className="absolute -bottom-14 left-1/2 -translate-x-1/2 text-center whitespace-nowrap"
-                animate={{ 
-                  opacity: isHovered || scale > 0.7 ? 1 : 0,
-                  y: isHovered ? -5 : 0
-                }}
+              <div 
+                className="relative -translate-x-1/2 -translate-y-1/2"
+                style={{ transformStyle: 'preserve-3d' }}
               >
                 <div className={`
-                  px-4 py-2 backdrop-blur-sm rounded-full border transition-all duration-300
-                  ${isHovered ? 'bg-[#BCFF00] border-[#BCFF00]' : 'bg-black/80 border-[#BCFF00]/30'}
+                  rounded-2xl overflow-hidden transition-all duration-300
+                  ${isHovered 
+                    ? 'shadow-2xl shadow-[#BCFF00]/50' 
+                    : z > 0 
+                      ? 'shadow-xl shadow-[#BCFF00]/30' 
+                      : 'shadow-lg shadow-black/40'
+                  }
                 `}>
-                  <span className={`font-bold ${isHovered ? 'text-black' : 'text-[#BCFF00]'}`}>
-                    {SLAB_PRICES[i]}
-                  </span>
+                  <div className={`
+                    w-36 md:w-44 bg-gradient-to-b from-white/10 to-white/5 p-1.5 rounded-2xl 
+                    border transition-all duration-300
+                    ${isHovered ? 'border-[#BCFF00]' : 'border-white/10'}
+                  `}>
+                    <img 
+                      src={img} 
+                      alt={`Slab ${i + 1}`} 
+                      className="w-full aspect-[3/4] object-cover rounded-xl"
+                    />
+                  </div>
                 </div>
-                <span className="text-xs text-zinc-500 mt-1.5 block">{SLAB_GRADES[i]}</span>
-              </motion.div>
+                
+                {/* Price tag */}
+                <motion.div 
+                  className="absolute -bottom-16 left-1/2 -translate-x-1/2 text-center whitespace-nowrap"
+                  animate={{ 
+                    opacity: isHovered || depthScale > 0.5 ? 1 : 0,
+                    scale: isHovered ? 1.1 : 1
+                  }}
+                >
+                  <div className={`
+                    px-4 py-2 backdrop-blur-sm rounded-full border transition-all duration-300
+                    ${isHovered ? 'bg-[#BCFF00] border-[#BCFF00]' : 'bg-black/80 border-[#BCFF00]/40'}
+                  `}>
+                    <span className={`font-bold text-sm ${isHovered ? 'text-black' : 'text-[#BCFF00]'}`}>
+                      {SLAB_PRICES[i]}
+                    </span>
+                  </div>
+                  <span className="text-xs text-zinc-500 mt-1.5 block">{SLAB_GRADES[i]}</span>
+                </motion.div>
+              </div>
             </motion.div>
           );
         })}
